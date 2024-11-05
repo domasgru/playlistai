@@ -1,4 +1,3 @@
-import Image from "next/image";
 import PlaylistInput from "@/components/PlaylistInput";
 
 export default function Home() {
