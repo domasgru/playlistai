@@ -23,7 +23,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-black p-8 pt-[24vh] text-white">
+    <div className="flex min-h-screen flex-col items-center p-8 pt-[24vh] text-white">
       {/* Heading */}
       <h1 className="text-heading mb-[72px] font-black">
         Generate your first playlist
