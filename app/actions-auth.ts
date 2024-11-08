@@ -2,6 +2,6 @@
 
 import { signIn } from "@/auth";
 
-export async function signInWithSpotify() {
-  await signIn("spotify");
+export async function signInWithSpotify(redirectTo = "/?test=true") {
+  await signIn("spotify", { redirectTo });
 }

@@ -2,24 +2,49 @@
 
 import { auth } from "@/auth";
 
-export async function getTrackURI({
-  songAuthor,
-  songTitle,
+const SPOTIFY_API_URL = "https://api.spotify.com/v1";
+
+export interface TrackInterface {
+  id: string;
+  uri: string;
+  name: string;
+  duration_ms: number;
+  external_spotify_url: string;
+  album: {
+    id: string;
+    type: string;
+    name: string;
+    release_date: string;
+    images: {
+      url: string;
+    }[];
+    external_spotify_url: string;
+  };
+  artists: {
+    id: string;
+    name: string;
+    external_spotify_url: string;
+  }[];
+}
+
+export async function getSpotifyTrack({
+  trackAuthor,
+  trackName,
 }: {
-  songAuthor: string;
-  songTitle: string;
-}): Promise<string | null> {
+  trackAuthor: string;
+  trackName: string;
+}): Promise<TrackInterface | null> {
   try {
     const session = await auth();
+
     if (!session?.accessToken) {
       throw new Error("No Spotify access token found");
     }
 
-    const searchQuery = encodeURIComponent(`${songAuthor} ${songTitle}`);
+    const searchQuery = encodeURIComponent(`${trackAuthor} ${trackName}`);
 
-    // Call Spotify search API
     const response = await fetch(
-      `https://api.spotify.com/v1/search?q=${searchQuery}&type=track&limit=1`,
+      `${SPOTIFY_API_URL}/search?q=${searchQuery}&type=track&limit=1`,
       {
         headers: {
           Authorization: `Bearer ${session.accessToken}`,
@@ -32,13 +57,32 @@ export async function getTrackURI({
     }
 
     const data = await response.json();
+    const track = data.tracks?.items[0];
 
-    // Check if we found any tracks
-    if (data.tracks?.items?.length > 0) {
-      return data.tracks.items[0].uri;
+    if (!track) {
+      return null;
     }
 
-    return null;
+    return {
+      id: track.id,
+      uri: track.uri,
+      name: track.name,
+      duration_ms: track.duration_ms,
+      external_spotify_url: track.external_urls.spotify,
+      album: {
+        id: track.album.id,
+        type: track.album.type,
+        name: track.album.name,
+        release_date: track.album.release_date,
+        images: track.album.images,
+        external_spotify_url: track.album.external_urls.spotify,
+      },
+      artists: track.artists.map((artist: any) => ({
+        id: artist.id,
+        name: artist.name,
+        external_spotify_url: artist.external_urls.spotify,
+      })),
+    };
   } catch (error) {
     console.error("Error searching Spotify:", error);
     return null;
@@ -47,18 +91,21 @@ export async function getTrackURI({
 
 export async function createPlaylist({
   tracks,
+  name = "My Generated Playlist",
+  description = "Playlist created by my app",
 }: {
   tracks: string[];
-}): Promise<string | null> {
+  name?: string;
+  description?: string;
+}): Promise<{ id: string; name: string; description: string }> {
   try {
     const session = await auth();
     if (!session?.accessToken) {
       throw new Error("No Spotify access token found");
     }
 
-    // Create a new playlist
     const createPlaylistResponse = await fetch(
-      `https://api.spotify.com/v1/users/${session.user?.id}/playlists`,
+      `${SPOTIFY_API_URL}/users/${session.accountId}/playlists`,
       {
         method: "POST",
         headers: {
@@ -66,12 +113,14 @@ export async function createPlaylist({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: "My Generated Playlist",
-          description: "Playlist created by my app",
+          name,
+          description,
           public: false,
         }),
       },
     );
+
+    const playlist = await createPlaylistResponse.json();
 
     if (!createPlaylistResponse.ok) {
       throw new Error(
@@ -79,11 +128,8 @@ export async function createPlaylist({
       );
     }
 
-    const playlist = await createPlaylistResponse.json();
-
-    // Add tracks to the playlist
     const addTracksResponse = await fetch(
-      `https://api.spotify.com/v1/playlists/${playlist.id}/tracks`,
+      `${SPOTIFY_API_URL}/playlists/${playlist.id}/tracks`,
       {
         method: "POST",
         headers: {
@@ -100,9 +146,12 @@ export async function createPlaylist({
       throw new Error(`Failed to add tracks: ${addTracksResponse.status}`);
     }
 
-    return playlist.id;
+    return {
+      id: playlist.id,
+      name: playlist.name,
+      description: playlist.description,
+    };
   } catch (error) {
-    console.error("Error creating playlist:", error);
-    return null;
+    throw new Error(`Error creating playlist: ${error}`);
   }
 }
