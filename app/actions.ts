@@ -1,16 +1,8 @@
-import {
-  getSpotifyTrack,
-  createPlaylist,
-  TrackInterface,
-} from "./actions-spotify";
-import { getGeneratedTrackList } from "./actions-openai";
+"use server";
 
-export interface PlaylistInterface {
-  id: string;
-  name: string;
-  description: string;
-  tracks: TrackInterface[];
-}
+import { getSpotifyTrack, createPlaylist } from "./actions-spotify";
+import { getGeneratedTrackList } from "./actions-openai";
+import { PlaylistInterface } from "./types";
 
 export async function generatePlaylist({
   playlistDescription,
@@ -20,7 +12,6 @@ export async function generatePlaylist({
   songCount?: number;
 }): Promise<PlaylistInterface> {
   try {
-    debugger;
     const generatedTracks = await getGeneratedTrackList({
       prompt: playlistDescription,
       count: songCount,
@@ -33,14 +24,18 @@ export async function generatePlaylist({
     const tracksURIList = tracks.map((track) => track.uri);
 
     const playlist = await createPlaylist({ tracks: tracksURIList });
+    const timestamp = new Date().toISOString();
 
     return {
       id: playlist.id,
       name: playlist.name,
       description: playlist.description,
       tracks,
+      generated_tracks: generatedTracks,
+      created_at: timestamp,
+      updated_at: timestamp,
     };
   } catch (error) {
-    throw new Error("Failed to generate playlist", { cause: error });
+    throw new Error(`Failed to generate playlist ${error}`);
   }
 }

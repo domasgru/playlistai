@@ -1,31 +1,9 @@
 "use server";
 
 import { auth } from "@/auth";
+import { TrackInterface } from "./types";
 
 const SPOTIFY_API_URL = "https://api.spotify.com/v1";
-
-export interface TrackInterface {
-  id: string;
-  uri: string;
-  name: string;
-  duration_ms: number;
-  external_spotify_url: string;
-  album: {
-    id: string;
-    type: string;
-    name: string;
-    release_date: string;
-    images: {
-      url: string;
-    }[];
-    external_spotify_url: string;
-  };
-  artists: {
-    id: string;
-    name: string;
-    external_spotify_url: string;
-  }[];
-}
 
 export async function getSpotifyTrack({
   trackAuthor,
@@ -37,7 +15,7 @@ export async function getSpotifyTrack({
   try {
     const session = await auth();
 
-    if (!session?.accessToken) {
+    if (!session?.access_token) {
       throw new Error("No Spotify access token found");
     }
 
@@ -47,7 +25,7 @@ export async function getSpotifyTrack({
       `${SPOTIFY_API_URL}/search?q=${searchQuery}&type=track&limit=1`,
       {
         headers: {
-          Authorization: `Bearer ${session.accessToken}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
       },
     );
@@ -98,60 +76,89 @@ export async function createPlaylist({
   name?: string;
   description?: string;
 }): Promise<{ id: string; name: string; description: string }> {
+  const session = await auth();
+  if (!session?.access_token) {
+    throw new Error("No Spotify access token found");
+  }
+
+  const createPlaylistResponse = await fetch(
+    `${SPOTIFY_API_URL}/users/${session.account_id}/playlists`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+        description,
+        public: false,
+      }),
+    },
+  );
+
+  const playlist = await createPlaylistResponse.json();
+
+  if (!createPlaylistResponse.ok) {
+    throw new Error(
+      `SpotifyAPI error, failed to create playlist: ${createPlaylistResponse.status}`,
+    );
+  }
+
+  const addTracksResponse = await fetch(
+    `${SPOTIFY_API_URL}/playlists/${playlist.id}/tracks`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        uris: tracks,
+      }),
+    },
+  );
+
+  if (!addTracksResponse.ok) {
+    throw new Error(
+      `SpotifyAPI error, failed to add tracks: ${addTracksResponse.status}`,
+    );
+  }
+
+  return {
+    id: playlist.id,
+    name: playlist.name,
+    description: playlist.description,
+  };
+}
+
+export async function playTrack(trackUri: string): Promise<void> {
   try {
     const session = await auth();
-    if (!session?.accessToken) {
+    if (!session?.access_token) {
       throw new Error("No Spotify access token found");
     }
 
-    const createPlaylistResponse = await fetch(
-      `${SPOTIFY_API_URL}/users/${session.accountId}/playlists`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          description,
-          public: false,
-        }),
+    const response = await fetch(`${SPOTIFY_API_URL}/me/player/play`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        uris: [trackUri],
+      }),
+    });
 
-    const playlist = await createPlaylistResponse.json();
-
-    if (!createPlaylistResponse.ok) {
-      throw new Error(
-        `Failed to create playlist: ${createPlaylistResponse.status}`,
-      );
+    if (!response.ok) {
+      // If no active device is found, this will help with debugging
+      if (response.status === 404) {
+        throw new Error("No active Spotify device found");
+      }
+      throw new Error(`Spotify API error: ${response.status}`);
     }
-
-    const addTracksResponse = await fetch(
-      `${SPOTIFY_API_URL}/playlists/${playlist.id}/tracks`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          uris: tracks,
-        }),
-      },
-    );
-
-    if (!addTracksResponse.ok) {
-      throw new Error(`Failed to add tracks: ${addTracksResponse.status}`);
-    }
-
-    return {
-      id: playlist.id,
-      name: playlist.name,
-      description: playlist.description,
-    };
   } catch (error) {
-    throw new Error(`Error creating playlist: ${error}`);
+    console.error("Error playing track:", error);
+    throw error;
   }
 }

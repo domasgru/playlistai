@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { PlaylistInterface } from "@/app/actions";
+import { PlaylistInterface } from "@/app/types";
 import { getAllPlaylists } from "@/app/indexedDB";
 import { openDB } from "idb";
 

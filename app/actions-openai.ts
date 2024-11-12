@@ -3,11 +3,7 @@
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
-
-export interface GeneratedTrackInterface {
-  trackAuthor: string;
-  trackName: string;
-}
+import { GeneratedTrackInterface } from "./types";
 
 export async function getGeneratedTrackList({
   prompt,
@@ -44,11 +40,13 @@ export async function getGeneratedTrackList({
     });
 
     if (!response.choices[0].message.parsed) {
-      throw new Error("AI Model failed to generate song list");
+      throw new Error("AI Model Error failed to generate song list");
     }
 
     return response.choices[0].message.parsed.tracks;
   } catch (error) {
-    throw new Error("AI Model failed to generate song list", { cause: error });
+    throw new Error("AI Model Error failed to generate song list", {
+      cause: error,
+    });
   }
 }
