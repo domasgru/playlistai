@@ -99,3 +99,18 @@ export async function getAllPlaylists() {
     return null;
   }
 }
+
+export async function updatePlaylist(
+  playlist: PlaylistInterface,
+): Promise<string | null> {
+  const db = await getPlaylistDB();
+  if (!db) return null;
+
+  try {
+    await db.put("playlists", playlist);
+    return playlist.id;
+  } catch (error) {
+    console.error("Failed to update playlist:", error);
+    return null;
+  }
+}

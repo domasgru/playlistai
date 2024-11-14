@@ -51,6 +51,7 @@ const config: Config = {
       },
       spacing: {
         0: "0",
+        1: "0.0625rem",
         2: "0.125rem",
         4: "0.25rem",
         6: "0.375rem",
@@ -72,10 +73,15 @@ const config: Config = {
         56: "3.5rem",
         64: "4rem",
         80: "5rem",
+        88: "5.5rem",
         162: "10.125rem",
       },
       boxShadow: {
         innerGlow: "inset 0px 0px 5px 1px rgba(255,255,255,0.08)",
+        elevation:
+          "0px 2px 3px 0px rgba(0,0,0,0.26), 0px 8px 16px 0px rgba(0,0,0,0.22)",
+        elevationWithInnerGlow:
+          "inset 0px 0px 5px 1px rgba(255,255,255,0.08), 0px 2px 3px 0px rgba(0,0,0,0.26), 0px 8px 16px 0px rgba(0,0,0,0.22)",
         sm: "0px 1px 2px 0px rgba(0,0,0,0.40)",
       },
     },

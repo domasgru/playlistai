@@ -11,7 +11,7 @@ export async function getGeneratedTrackList({
 }: {
   prompt: string;
   count?: number;
-}): Promise<GeneratedTrackInterface[]> {
+}): Promise<{ tracks: GeneratedTrackInterface[]; playlistName: string }> {
   try {
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -28,6 +28,7 @@ export async function getGeneratedTrackList({
       ],
       response_format: zodResponseFormat(
         z.object({
+          playlistName: z.string(),
           tracks: z.array(
             z.object({
               trackAuthor: z.string(),
@@ -43,7 +44,7 @@ export async function getGeneratedTrackList({
       throw new Error("AI Model Error failed to generate song list");
     }
 
-    return response.choices[0].message.parsed.tracks;
+    return response.choices[0].message.parsed;
   } catch (error) {
     throw new Error("AI Model Error failed to generate song list", {
       cause: error,

@@ -49,7 +49,7 @@ export default function PlaylistView({
   }, [playlist]);
 
   return (
-    <div className="relative min-w-0 flex-1 overflow-hidden overflow-y-auto rounded-xl border border-input bg-gray-800">
+    <div className="relative h-full min-w-0 flex-1 overflow-hidden overflow-y-auto rounded-xl border border-input bg-gray-800">
       <div
         className="absolute inset-0 z-0"
         style={{
@@ -57,8 +57,8 @@ export default function PlaylistView({
         }}
       />
 
-      <div className="relative z-[1] flex gap-20 p-28">
-        <div className="h-[98px] w-[98px] flex-shrink-0 overflow-hidden rounded-[1px] bg-gray-700 shadow-sm">
+      <div className="relative z-[1] flex gap-14 p-28">
+        <div className="h-[96px] w-[96px] flex-shrink-0 overflow-hidden rounded-[1px] bg-gray-700 shadow-sm">
           {playlist.tracks[0]?.album.images[0] && (
             <img
               src={playlist.tracks[0].album.images[0].url}
@@ -79,11 +79,11 @@ export default function PlaylistView({
       </div>
 
       {/* Tracks List */}
-      <div className="relative z-[1] flex flex-col space-y-2 bg-[rgba(0,0,0,0.12)] py-16">
+      <div className="pb-88 relative z-[1] flex flex-col space-y-2 bg-[rgba(0,0,0,0.12)] pt-16">
         {playlist.tracks.map((track, index) => (
           <div
             key={track.id}
-            className="flex cursor-default items-center py-10 pl-16 pr-32 hover:bg-[rgba(255,255,255,0.04)]"
+            className="flex cursor-default items-center py-8 pl-16 pr-32 hover:bg-[rgba(255,255,255,0.04)]"
             onClick={async () => {
               try {
                 await playTrack(track.uri);
@@ -99,7 +99,7 @@ export default function PlaylistView({
             <img
               src={track.album.images[1].url}
               alt={track.album.name}
-              className="mr-12 h-56 w-56 flex-shrink-0 rounded-[1px]"
+              className="mr-14 h-52 w-52 flex-shrink-0 rounded-[1px]"
             />
             <div className="mr-40 min-w-0 flex-grow">
               <div className="mb-2 overflow-hidden text-ellipsis whitespace-nowrap text-baseCompact text-white">
