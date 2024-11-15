@@ -1,11 +1,7 @@
 import { PlaylistInterface } from "@/app/types";
-import {
-  Listbox,
-  ListboxButton,
-  ListboxOptions,
-  ListboxOption,
-} from "@headlessui/react";
 import ChevronDown from "@/public/chevron-down.svg";
+import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
 
 export default function PlaylistSelect({
   playlists,
@@ -16,51 +12,85 @@ export default function PlaylistSelect({
   selectedPlaylist: PlaylistInterface | null;
   onSelectPlaylist: (selectedPlaylist: PlaylistInterface) => void;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <Listbox
-      value={selectedPlaylist}
-      onChange={onSelectPlaylist}
-      as="div"
-      className="relative flex-1"
-    >
-      <ListboxButton
-        className={({ open }) =>
-          `group flex w-full cursor-default items-center rounded border border-input py-10 pl-16 pr-20 text-white shadow-innerGlow hover:bg-gray-750 ${open ? "bg-gray-750" : "bg-gray-800"} `
-        }
+    <div className="relative flex-1">
+      <motion.button
+        onClick={() => setIsOpen(!isOpen)}
+        layoutId="playlist-select"
+        className={`group flex w-full cursor-default items-center rounded border border-input py-10 pl-16 pr-20 text-white shadow-innerGlow hover:bg-gray-750`}
+        transition={{
+          duration: 0.25,
+          type: "spring",
+          bounce: 0,
+        }}
+        style={{
+          translateZ: 0,
+          borderRadius: "16px",
+          transformStyle: "preserve-3d",
+        }}
       >
         {selectedPlaylist && (
-          <img
+          <motion.img
+            layout="position"
             src={selectedPlaylist.tracks[0]?.album.images[0].url}
             alt="Album cover"
             className="mr-16 h-52 w-52 rounded-full saturate-[0.3] transition-[filter] duration-150 ease-in-out group-hover:saturate-[1]"
           />
         )}
-        <span className="flex-1 truncate text-left">
+        <motion.span layout="position" className="mr-auto truncate">
           {selectedPlaylist?.name || "Select selectedPlaylist"}
-        </span>
-        <ChevronDown className="h-28 w-28" />
-      </ListboxButton>
+        </motion.span>
+        <motion.div layoutId="playlist-chevron" layout="position">
+          <ChevronDown className="h-28 w-28" />
+        </motion.div>
+      </motion.button>
 
-      <ListboxOptions className="t-0 absolute z-10 mt-4 max-h-[400px] w-full overflow-auto rounded border border-input bg-gray-800 py-4 shadow-innerGlow">
-        {playlists.map((selectedPlaylist) => (
-          <ListboxOption
-            key={selectedPlaylist.id}
-            value={selectedPlaylist}
-            className="flex w-full items-center gap-12 px-16 py-8 text-left hover:cursor-default hover:bg-gray-700"
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            layoutId="playlist-select"
+            transition={{
+              duration: 0.15,
+              type: "spring",
+              bounce: 0,
+            }}
+            style={{
+              translateZ: 0,
+              borderRadius: "16px",
+              transformStyle: "preserve-3d",
+            }}
+            onMouseLeave={() => setIsOpen(false)}
+            className="absolute top-0 z-10 max-h-[216px] w-full overflow-auto rounded border border-input bg-gray-800 py-8 shadow-innerGlow"
           >
-            <img
-              src={
-                selectedPlaylist.tracks[0]?.album.images[
-                  selectedPlaylist.tracks[0]?.album.images.length - 1
-                ].url
-              }
-              alt=""
-              className="h-32 w-32 rounded"
-            />
-            <span className="truncate">{selectedPlaylist.name}</span>
-          </ListboxOption>
-        ))}
-      </ListboxOptions>
-    </Listbox>
+            {playlists.map((selectedPlaylist) => (
+              <div
+                key={selectedPlaylist.id}
+                className="flex w-full items-center gap-12 px-16 py-8 text-left hover:cursor-default hover:bg-gray-700"
+                onClick={() => {
+                  onSelectPlaylist(selectedPlaylist);
+                  setIsOpen(false);
+                }}
+              >
+                <motion.img
+                  layout="position"
+                  src={
+                    selectedPlaylist.tracks[0]?.album.images[
+                      selectedPlaylist.tracks[0]?.album.images.length - 1
+                    ].url
+                  }
+                  alt=""
+                  className="h-32 w-32 rounded"
+                />
+                <motion.span layout="position" className="truncate">
+                  {selectedPlaylist.name}
+                </motion.span>
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
