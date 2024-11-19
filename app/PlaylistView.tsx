@@ -1,18 +1,31 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PlaylistInterface } from "@/app/types";
+import { PlaylistInterface, PlayerStateInterface } from "@/app/types";
 import { prominent } from "color.js";
-import { playTrack } from "@/app/actions-spotify";
+import PauseIcon from "@/public/pause.svg";
+import PlayIcon from "@/public/play.svg";
+import clsx from "clsx";
+import { motion } from "framer-motion";
 
 export default function PlaylistView({
   playlist,
+  currentPlayerState,
+  onPlayTrack,
+  onShowCover,
 }: {
   playlist: PlaylistInterface;
-  onSelectPlaylist: (playlist: PlaylistInterface) => void;
+  currentPlayerState: PlayerStateInterface | null;
+  onPlayTrack: ({
+    contextUri,
+    trackUri,
+  }: {
+    contextUri?: string;
+    trackUri: string;
+  }) => void;
+  onShowCover: (cover: { layoutId: string; coverUrl: string }) => void;
 }) {
   const [dominantColor, setDominantColor] = useState<string>("");
-  const [titleFontSize, setTitleFontSize] = useState<string>("44px");
 
   const extractColors = async (imageUrl: string) => {
     try {
@@ -33,23 +46,22 @@ export default function PlaylistView({
     }
   };
 
-  const calculateTitleFontSize = (title: string) => {
+  function getTitleFontSize(title: string) {
     if (title.length <= 6) return "44px";
     if (title.length <= 8) return "36px";
     return "24px";
-  };
+  }
 
   useEffect(() => {
     if (playlist) {
       if (playlist?.tracks[0]?.album.images[0]) {
         extractColors(playlist.tracks[0].album.images[0].url);
       }
-      setTitleFontSize(calculateTitleFontSize(playlist.name));
     }
   }, [playlist]);
 
   return (
-    <div className="relative h-full min-w-0 flex-1 overflow-hidden overflow-y-auto rounded-xl border border-input bg-gray-800">
+    <div className="custom-scrollbar relative h-full min-w-0 flex-1 overflow-y-auto rounded-xl border border-input bg-gray-800">
       <div
         className="absolute inset-0 z-0"
         style={{
@@ -58,19 +70,37 @@ export default function PlaylistView({
       />
 
       <div className="relative z-[1] flex gap-14 p-28">
-        <div className="h-[96px] w-[96px] flex-shrink-0 overflow-hidden rounded-[1px] bg-gray-700 shadow-sm">
-          {playlist.tracks[0]?.album.images[0] && (
-            <img
-              src={playlist.tracks[0].album.images[0].url}
-              alt={playlist.name}
-              className="h-full w-full object-cover"
-            />
-          )}
-        </div>
+        <motion.div
+          layoutId={playlist.id}
+          transition={{
+            type: "spring",
+            duration: 0.4,
+            bounce: 0,
+          }}
+          whileHover={{
+            scale: 1.05,
+            rotate: 1,
+            transition: { type: "spring", duration: 0.2, bounce: 0 },
+          }}
+          onClick={() =>
+            onShowCover({
+              layoutId: playlist.id,
+              coverUrl: playlist.tracks[0].album.images[0].url,
+            })
+          }
+          className="h-[96px] w-[96px] flex-shrink-0 cursor-zoom-in select-none bg-gray-700 shadow-sm"
+        >
+          <img
+            src={playlist.tracks[0].album.images[0].url}
+            alt={playlist.name}
+            draggable="false"
+            className="h-full w-full rounded-[1px]"
+          />
+        </motion.div>
         <div className="mr-20 min-w-0 flex-grow pt-12">
           <h1
             className="mb-8 overflow-hidden text-ellipsis whitespace-nowrap font-black leading-[1.2] text-white"
-            style={{ fontSize: titleFontSize }}
+            style={{ fontSize: getTitleFontSize(playlist.name) }}
           >
             {playlist.name}
           </h1>
@@ -79,37 +109,101 @@ export default function PlaylistView({
       </div>
 
       {/* Tracks List */}
-      <div className="pb-88 relative z-[1] flex flex-col space-y-2 bg-[rgba(0,0,0,0.12)] pt-16">
+      <div className="relative z-[1] flex flex-col space-y-2 bg-[rgba(0,0,0,0.12)] pb-88 pt-16">
         {playlist.tracks.map((track, index) => (
           <div
-            key={track.id}
-            className="flex cursor-default items-center py-8 pl-16 pr-32 hover:bg-[rgba(255,255,255,0.04)]"
-            onClick={async () => {
-              try {
-                await playTrack(track.uri);
-              } catch (error) {
-                console.error("Error playing track:", error);
-                // You might want to show a toast notification here
-              }
-            }}
+            key={`${track.spotify_id}-${index}`}
+            className="group flex cursor-default items-center py-8 pl-16 pr-32 hover:bg-[rgba(255,255,255,0.04)]"
+            onClick={() =>
+              onPlayTrack({
+                contextUri: playlist.spotify_uri,
+                trackUri: track.spotify_uri,
+              })
+            }
           >
-            <span className="mr-24 w-32 flex-shrink-0 text-right text-[22px] font-light text-gray-500">
-              {index + 1}
+            <span
+              className={clsx(
+                "relative mr-24 flex h-32 w-32 flex-shrink-0 items-center justify-end text-[22px]",
+                currentPlayerState?.currentTrackId === track.spotify_id
+                  ? "text-background-brand"
+                  : "text-gray-500",
+              )}
+            >
+              <span
+                className={clsx("group-hover:hidden", {
+                  hidden:
+                    currentPlayerState?.currentTrackId === track.spotify_id &&
+                    !currentPlayerState?.isPaused,
+                })}
+              >
+                {index + 1}
+              </span>
+              <PlayIcon
+                className={clsx("hidden h-[26px] w-[26px]", {
+                  "group-hover:block":
+                    currentPlayerState?.currentTrackId !== track.spotify_id ||
+                    (currentPlayerState?.currentTrackId === track.spotify_id &&
+                      currentPlayerState?.isPaused),
+                  "translate-x-[6px]": (index + 1).toString().length === 1,
+                })}
+              />
+              {currentPlayerState?.currentTrackId === track.spotify_id &&
+                !currentPlayerState?.isPaused && (
+                  <PauseIcon
+                    className={clsx("h-[26px] w-[26px]", {
+                      "translate-x-[6px]": (index + 1).toString().length === 1,
+                    })}
+                  />
+                )}
             </span>
-            <img
-              src={track.album.images[1].url}
-              alt={track.album.name}
-              className="mr-14 h-52 w-52 flex-shrink-0 rounded-[1px]"
-            />
+            <motion.div
+              layoutId={track.spotify_id}
+              transition={{
+                type: "spring",
+                duration: 0.3,
+                bounce: 0,
+              }}
+              whileHover={{
+                scale: 1.1,
+                rotate: 1,
+                transition: { type: "spring", duration: 0.2, bounce: 0 },
+              }}
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                onShowCover({
+                  layoutId: track.spotify_id,
+                  coverUrl: track.album.images[0].url,
+                });
+              }}
+              onMouseEnter={() => {
+                const preloadImage = new Image();
+                preloadImage.src = track.album.images[0].url;
+              }}
+              className="mr-14 h-52 w-52 flex-shrink-0 cursor-zoom-in select-none rounded-[1px]"
+            >
+              <img
+                draggable="false"
+                src={track.album.images[1].url}
+                alt={track.album.name}
+                className="h-full w-full rounded-[1px]"
+              />
+            </motion.div>
             <div className="mr-40 min-w-0 flex-grow">
-              <div className="mb-2 overflow-hidden text-ellipsis whitespace-nowrap text-baseCompact text-white">
+              <div
+                className={clsx(
+                  "mb-2 overflow-hidden text-ellipsis whitespace-nowrap text-baseCompact",
+                  currentPlayerState?.currentTrackId === track.spotify_id
+                    ? "text-background-brand"
+                    : "text-white",
+                )}
+              >
                 {track.name}
               </div>
               <div className="overflow-hidden text-ellipsis whitespace-nowrap text-baseCompact text-gray-400">
                 {track.artists.map((artist) => artist.name).join(", ")}
               </div>
             </div>
-            <div className="text-[19px] font-light text-gray-400">
+            <div className="text-[19px] text-gray-400">
               {Math.floor(track.duration_ms / 60000)}:
               {String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(
                 2,

@@ -20,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={nunitoSans.className}>
-      <body className="bg-background-base px-[20px] font-sans text-base font-light text-foreground-light">
+      <body className="bg-background-base px-[20px] font-sans text-base text-foreground-light">
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>

@@ -13,13 +13,15 @@ export default function PlaylistSelect({
   onSelectPlaylist: (selectedPlaylist: PlaylistInterface) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   return (
-    <div className="relative flex-1">
+    <div className="relative w-full min-w-0 flex-1 select-none">
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
+        //onMouseEnter={() => setIsOpen(true)}
         layoutId="playlist-select"
-        className={`group flex w-full cursor-default items-center rounded border border-input py-10 pl-16 pr-20 text-white shadow-innerGlow hover:bg-gray-750`}
+        className={`group flex w-full cursor-default items-center rounded border border-input bg-gray-800 py-10 pl-16 pr-20 text-white shadow-innerGlow hover:bg-gray-750`}
         transition={{
           duration: 0.25,
           type: "spring",
@@ -62,29 +64,33 @@ export default function PlaylistSelect({
               transformStyle: "preserve-3d",
             }}
             onMouseLeave={() => setIsOpen(false)}
-            className="absolute top-0 z-10 max-h-[216px] w-full overflow-auto rounded border border-input bg-gray-800 py-8 shadow-innerGlow"
+            onLayoutAnimationStart={() => setIsAnimating(true)}
+            onLayoutAnimationComplete={() => setIsAnimating(false)}
+            className="absolute top-0 z-10 max-h-[228px] w-full overflow-auto rounded border border-input bg-gray-800 py-12 shadow-elevationWithInnerGlow"
           >
-            {playlists.map((selectedPlaylist) => (
+            {playlists.map((playlist) => (
               <div
-                key={selectedPlaylist.id}
-                className="flex w-full items-center gap-12 px-16 py-8 text-left hover:cursor-default hover:bg-gray-700"
+                key={playlist.id}
+                className={`flex w-full items-center gap-12 px-16 py-8 text-left ${isAnimating ? "pointer-events-none" : "hover:cursor-default hover:bg-gray-700"}`}
                 onClick={() => {
-                  onSelectPlaylist(selectedPlaylist);
-                  setIsOpen(false);
+                  if (!isAnimating) {
+                    onSelectPlaylist(playlist);
+                    setIsOpen(false);
+                  }
                 }}
               >
                 <motion.img
                   layout="position"
                   src={
-                    selectedPlaylist.tracks[0]?.album.images[
-                      selectedPlaylist.tracks[0]?.album.images.length - 1
+                    playlist.tracks[0]?.album.images[
+                      playlist.tracks[0]?.album.images.length - 1
                     ].url
                   }
                   alt=""
                   className="h-32 w-32 rounded"
                 />
                 <motion.span layout="position" className="truncate">
-                  {selectedPlaylist.name}
+                  {playlist.name}
                 </motion.span>
               </div>
             ))}

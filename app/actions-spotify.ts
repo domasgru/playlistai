@@ -42,8 +42,8 @@ export async function getSpotifyTrack({
     }
 
     return {
-      id: track.id,
-      uri: track.uri,
+      spotify_id: track.id,
+      spotify_uri: track.uri,
       name: track.name,
       duration_ms: track.duration_ms,
       external_spotify_url: track.external_urls.spotify,
@@ -75,7 +75,10 @@ export async function createPlaylist({
   tracks: string[];
   name?: string;
   description?: string;
-}): Promise<{ id: string; name: string; description: string }> {
+}): Promise<{
+  id: string;
+  uri: string;
+}> {
   const session = await auth();
   if (!session?.access_token) {
     throw new Error("No Spotify access token found");
@@ -127,28 +130,50 @@ export async function createPlaylist({
 
   return {
     id: playlist.id,
-    name: playlist.name,
-    description: playlist.description,
+    uri: playlist.uri,
   };
 }
 
-export async function playTrack(trackUri: string): Promise<void> {
+export async function playTrack({
+  trackUri,
+  deviceId,
+  contextUri,
+}: {
+  trackUri: string;
+  deviceId: string | null;
+  contextUri?: string;
+}): Promise<void> {
   try {
     const session = await auth();
     if (!session?.access_token) {
       throw new Error("No Spotify access token found");
     }
+    console.log("deviceId", deviceId);
+    console.log("contextUri", contextUri);
 
-    const response = await fetch(`${SPOTIFY_API_URL}/me/player/play`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        "Content-Type": "application/json",
+    const deviceQueryParam = deviceId ? `?device_id=${deviceId}` : "";
+    const response = await fetch(
+      `${SPOTIFY_API_URL}/me/player/play${deviceQueryParam}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(
+          contextUri
+            ? {
+                context_uri: contextUri,
+                offset: {
+                  uri: trackUri,
+                },
+              }
+            : {
+                uris: [trackUri],
+              },
+        ),
       },
-      body: JSON.stringify({
-        uris: [trackUri],
-      }),
-    });
+    );
 
     if (!response.ok) {
       // If no active device is found, this will help with debugging

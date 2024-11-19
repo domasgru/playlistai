@@ -25,7 +25,7 @@ export async function generatePlaylist({
       generatedTracks.map((song) => getSpotifyTrack(song)),
     );
     const tracks = unfilteredTracks.filter((track) => track !== null);
-    const tracksURIList = tracks.map((track) => track.uri);
+    const tracksURIList = tracks.map((track) => track.spotify_uri);
 
     let playlist;
     if (uploadToSpotify) {
@@ -41,6 +41,7 @@ export async function generatePlaylist({
     return {
       id: nanoid(8),
       spotify_id: playlist?.id,
+      spotify_uri: playlist?.uri,
       name: playlistName,
       description: playlistDescription,
       tracks,

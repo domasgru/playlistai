@@ -3,16 +3,16 @@ import { motion } from "framer-motion";
 
 interface GenerateButtonProps {
   size?: "sm" | "md" | "lg";
-  text?: string;
   className?: string;
   onClick?: () => void;
+  children: React.ReactNode;
 }
 
 export default function GenerateButton({
   size = "md",
-  text = "Generate playlist",
   className,
   onClick,
+  children,
 }: GenerateButtonProps) {
   const paddingClasses = {
     sm: "px-16 py-8",
@@ -24,11 +24,12 @@ export default function GenerateButton({
     <button
       onClick={onClick}
       className={clsx(
-        `flex-shrink-0 cursor-default rounded-full border border-border-brand bg-background-brand text-baseCompact hover:bg-background-brandHover ${paddingClasses} font-medium text-foreground-dark`,
+        "flex-shrink-0 cursor-default rounded-full border border-border-brand bg-background-brand text-baseCompact font-[600] text-foreground-dark hover:bg-background-brandHover",
+        paddingClasses,
         className,
       )}
     >
-      <span>{text}</span>
+      {children}
     </button>
   );
 }

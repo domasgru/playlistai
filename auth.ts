@@ -13,7 +13,7 @@ declare module "next-auth" {
 const baseConfig = {
   providers: [
     Spotify({
-      authorization: `https://accounts.spotify.com/authorize?scope=${encodeURIComponent("playlist-read-private playlist-modify-public playlist-modify-private user-modify-playback-state")}`,
+      authorization: `https://accounts.spotify.com/authorize?scope=${encodeURIComponent("playlist-read-private playlist-modify-public playlist-modify-private user-modify-playback-state user-read-playback-state user-read-currently-playing streaming")}`,
     }),
   ],
   callbacks: {
@@ -61,6 +61,10 @@ const baseConfig = {
           token.refresh_token = newTokens.refresh_token;
         return token;
       }
+    },
+    session({ session, token }: { session: any; token: any }) {
+      session.access_token = token.access_token;
+      return session;
     },
     authorized({ auth, request }: { auth: any; request: any }) {
       console.log("authorized auth--->", auth);

@@ -40,9 +40,9 @@ const config: Config = {
         input: "rgb(255 255 255 / 0.16)",
       },
       fontSize: {
-        sm: ["1rem", "1.6em"],
+        sm: ["1rem", "1.63em"],
         base: ["1.25rem", "1.6em"],
-        baseCompact: ["1.25rem", "1.35em"],
+        baseCompact: ["1.25rem", "1.4em"],
         lg: ["1.5rem", "1.6em"],
         heading: ["2.375rem", "1.4em"],
       },

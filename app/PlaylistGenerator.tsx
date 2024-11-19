@@ -1,30 +1,75 @@
 "use client";
 
-import PlaylistInput from "@/app/PlaylistInput";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { AnimatePresence } from "framer-motion";
+import { useLocalStorage } from "usehooks-ts";
+
 import { signInWithSpotify } from "@/app/actions-auth";
 import { generatePlaylist } from "@/app/actions";
 import { savePlaylist, updatePlaylist } from "@/app/db";
-import { useState, useEffect, useRef } from "react";
 import { PlaylistInterface } from "@/app/types";
 import { getAllPlaylists } from "@/app/db";
 import PlaylistView from "@/app/PlaylistView";
 import GenerateButton from "@/app/GenerateButton";
 import PlaylistSelect from "@/app/PlaylistSelect";
-import { AnimatePresence, motion } from "framer-motion";
-import clsx from "clsx";
+import PlaylistEmptyScreen from "@/app/PlaylistEmptyScreen";
+import PlaylistGenerateNewInput from "@/app/PlaylistGenerateNewInput";
+import FullscreenLoader from "@/app/FullscreenLoader";
+import PlaylistUpdateInput from "@/app/PlaylistUpdateInput";
+import { playTrack } from "./actions-spotify";
+import { PlayerStateInterface, CoverModalDataInterface } from "./types";
+import CoverModal from "@/app/CoverModal";
+
+declare global {
+  interface Window {
+    Spotify: any;
+    onSpotifyWebPlaybackSDKReady: () => void;
+  }
+}
 
 export default function PlaylistGenerator() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(true);
   const [allPlaylists, setAllPlaylists] = useState<PlaylistInterface[]>([]);
   const [selectedPlaylist, setSelectedPlaylist] =
-    useState<PlaylistInterface | null>(null);
+    useLocalStorage<PlaylistInterface | null>("selectedPlaylist", null);
   const [showNewPlaylistInput, setShowNewPlaylistInput] = useState(false);
 
-  const isInitializing = status === "loading" || isLoadingPlaylists;
+  const [player, setPlayer] = useState<any>(null);
+  const [playerDeviceId, setPlayerDeviceId] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentPlayerState, setCurrentPlayerState] =
+    useState<PlayerStateInterface | null>(null);
+  const [coverModalData, setCoverModalData] =
+    useState<CoverModalDataInterface | null>(null);
+
+  const hasInitialized = status !== "loading" && !isLoadingPlaylists;
+
+  async function loadPlaylists() {
+    try {
+      const loadedPlaylists = await getAllPlaylists();
+      if (!loadedPlaylists) return;
+
+      const sortedPlaylists = loadedPlaylists.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+      setAllPlaylists(sortedPlaylists);
+      if (sortedPlaylists.length > 0 && !selectedPlaylist) {
+        setSelectedPlaylist(sortedPlaylists[0]);
+      }
+    } catch (error) {
+      console.error("Error while loading playlists:", error);
+    } finally {
+      setIsLoadingPlaylists(false);
+    }
+  }
 
   const [isGeneratingNewPlaylist, setIsGeneratingNewPlaylist] = useState(
     searchParams.get("generate") !== null,
@@ -54,12 +99,6 @@ export default function PlaylistGenerator() {
     }
   }
 
-  function handleNewPlaylistInputMouseleave() {
-    if (!isGeneratingNewPlaylist) {
-      setShowNewPlaylistInput(false);
-    }
-  }
-
   const [isRegenerating, setIsRegenerating] = useState(false);
   async function regenerateSelectedPlaylist(
     playlistDescriptionInput: string,
@@ -70,6 +109,7 @@ export default function PlaylistGenerator() {
       setIsRegenerating(true);
       const regeneratedPlaylist = await generatePlaylist({
         playlistDescription: playlistDescriptionInput,
+        uploadToSpotify: false,
       });
 
       const updatedPlaylist: PlaylistInterface = {
@@ -100,66 +140,146 @@ export default function PlaylistGenerator() {
     }
   }
 
-  useEffect(() => {
-    const loadPlaylists = async () => {
-      const loadedPlaylists = await getAllPlaylists();
-      if (!loadedPlaylists) return;
+  function loadSpotifyPlayer() {
+    const script = document.createElement("script");
+    script.src = "https://sdk.scdn.co/spotify-player.js";
+    script.async = true;
 
-      const sortedPlaylists = loadedPlaylists.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    document.body.appendChild(script);
+
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      const player = new window.Spotify.Player({
+        name: "Playlsit App Web Player",
+        getOAuthToken: (cb: any) => {
+          cb(session?.access_token);
+        },
+        volume: 0.5,
+      });
+      setPlayer(player);
+
+      player.addListener("ready", ({ device_id }: { device_id: string }) => {
+        setPlayerDeviceId(device_id);
+      });
+
+      player.addListener(
+        "not_ready",
+        ({ device_id }: { device_id: string }) => {
+          console.error("Device ID has gone offline", device_id);
+        },
       );
-      setAllPlaylists(sortedPlaylists);
-      if (sortedPlaylists.length > 0) {
-        setSelectedPlaylist(sortedPlaylists[0]);
-      }
 
-      setIsLoadingPlaylists(false);
+      player.addListener(
+        "player_state_changed",
+        (newState: {
+          paused: boolean;
+          position: number;
+          duration: number;
+          track_window: { current_track: any };
+        }) => {
+          if (newState) {
+            setCurrentPlayerState({
+              isPaused: newState.paused,
+              currentTrackId: newState.track_window.current_track.id,
+              currentTrackUri: newState.track_window.current_track.uri,
+              position: newState.position,
+              duration: newState.duration,
+            });
+          } else {
+            setCurrentPlayerState(null);
+          }
+        },
+      );
+
+      player.connect();
     };
+  }
+
+  async function handlePlayTrack({
+    contextUri,
+    trackUri,
+  }: {
+    contextUri?: string;
+    trackUri: string;
+  }) {
+    try {
+      if (trackUri === currentPlayerState?.currentTrackUri) {
+        player?.togglePlay();
+      } else {
+        await playTrack({ deviceId: playerDeviceId, trackUri, contextUri });
+        player.activateElement();
+      }
+    } catch (error) {
+      console.error("Error playing track:", error);
+    }
+  }
+
+  function handleNewPlaylistInputMouseleave() {
+    if (!isGeneratingNewPlaylist) {
+      setShowNewPlaylistInput(false);
+    }
+  }
+
+  function handleShowCover(coverData: CoverModalDataInterface) {
+    setCoverModalData(coverData);
+  }
+
+  function getBlurOutStyles(transformOrigin: string) {
+    return blurOutPlaylistView
+      ? {
+          transform: `scale(0.9)`,
+          transformOrigin: transformOrigin,
+          filter: `blur(2px) brightness(0.5)`,
+          transition: "all 0.2s ease-in-out",
+        }
+      : {
+          transform: `scale(1)`,
+          transformOrigin: transformOrigin,
+          filter: `blur(0px) brightness(1)`,
+          transition: "all 0.2s ease-in-out",
+        };
+  }
+
+  useEffect(() => {
     loadPlaylists();
   }, []);
 
-  const blurOutPlaylistView = showNewPlaylistInput && !isGeneratingNewPlaylist;
+  useEffect(() => {
+    if (!hasInitialized) return;
 
-  const newPlaylistInputRef = useRef(null);
+    const generateParam = searchParams.get("generate");
+    if (generateParam) {
+      generateNewPlaylist(generateParam);
+      router.replace("/");
+    }
+
+    loadSpotifyPlayer();
+  }, [hasInitialized]);
+
+  const blurOutPlaylistView =
+    (showNewPlaylistInput && !isGeneratingNewPlaylist) || coverModalData;
 
   return (
-    <div>
-      {isInitializing && (
-        <div className="flex min-h-screen flex-col items-center p-8 pt-[24vh] text-white">
-          <h1 className="mb-[72px] text-heading font-black">
-            Loading your playlists...
-          </h1>
-        </div>
-      )}
+    <div className="h-[100vh]">
+      {!hasInitialized && <FullscreenLoader />}
 
-      {!isInitializing && (
+      {hasInitialized && (
         <>
           {(!session?.user || !selectedPlaylist) && (
-            <div className="flex min-h-screen flex-col items-center p-8 pt-[24vh] text-white">
-              <h1 className="mb-[72px] text-heading font-black">
-                Generate your first playlist
-              </h1>
-              <PlaylistInput
-                showSuggestions={true}
-                onSubmit={generateNewPlaylist}
-                isLoading={isGeneratingNewPlaylist}
-              />
-            </div>
+            <PlaylistEmptyScreen
+              onSubmit={generateNewPlaylist}
+              isLoggedIn={!!session?.user}
+              isLoading={isGeneratingNewPlaylist}
+            />
           )}
 
           {session?.user && selectedPlaylist && (
-            <div className="relative mx-auto h-[100vh] max-w-[592px] py-24">
+            <div className="relative mx-auto h-full max-w-[592px] py-24">
               <div className="relative flex h-full w-full flex-col gap-16">
+                {/* Playlists manager */}
                 <div className="z-10 flex justify-center">
                   <div
                     className="flex w-full flex-shrink-0 items-center justify-between gap-16"
-                    style={{
-                      transform: `scale(${blurOutPlaylistView ? 0.9 : 1})`,
-                      transformOrigin: `center calc(100% + 150px)`,
-                      filter: `blur(${blurOutPlaylistView ? "2px" : "0px"}) brightness(${blurOutPlaylistView ? 0.5 : 1})`,
-                      transition: "all 0.15s ease-in-out",
-                    }}
+                    style={getBlurOutStyles("center calc(100% + 150px)")}
                   >
                     <PlaylistSelect
                       playlists={allPlaylists}
@@ -168,70 +288,46 @@ export default function PlaylistGenerator() {
                     />
 
                     <GenerateButton
-                      text="New playlist"
                       size="lg"
                       onClick={() =>
                         setShowNewPlaylistInput(!showNewPlaylistInput)
                       }
-                    />
+                    >
+                      <span className="hidden sm:inline">New playlist</span>
+                      <img
+                        src="/plus.svg"
+                        alt="New playlist"
+                        className="box-content h-[17px] w-[17px] p-[5px] sm:hidden"
+                      />
+                    </GenerateButton>
                   </div>
                   <AnimatePresence>
                     {(showNewPlaylistInput || isGeneratingNewPlaylist) && (
-                      <motion.div
-                        initial={{ y: -500, scale: 0.5 }}
-                        animate={{ y: 0, scale: 1 }}
-                        exit={{
-                          y: -500,
-                          scale: 0.8,
-                          transition: { duration: 0.6 },
-                        }}
-                        transition={{
-                          duration: 0.25,
-                          type: "spring",
-                          bounce: 0,
-                        }}
-                        className={clsx(
-                          "absolute top-0 z-10 box-content w-full",
-                          showNewPlaylistInput &&
-                            !isGeneratingNewPlaylist &&
-                            "px-[100px] pb-[80px]",
-                        )}
+                      <PlaylistGenerateNewInput
+                        isLoading={isGeneratingNewPlaylist}
+                        onSubmit={generateNewPlaylist}
                         onMouseLeave={handleNewPlaylistInputMouseleave}
-                      >
-                        <PlaylistInput
-                          onSubmit={generateNewPlaylist}
-                          isLoading={isGeneratingNewPlaylist}
-                          onEscape={handleNewPlaylistInputMouseleave}
-                          onClickOutside={handleNewPlaylistInputMouseleave}
-                          variant="dark"
-                        />
-                      </motion.div>
+                        onEscape={handleNewPlaylistInputMouseleave}
+                        onClickOutside={handleNewPlaylistInputMouseleave}
+                      />
                     )}
                   </AnimatePresence>
                 </div>
 
+                {/* Playlist view */}
                 <div
                   className="relative h-full min-h-0 flex-1"
-                  style={{
-                    transform: `scale(${blurOutPlaylistView ? 0.9 : 1})`,
-                    transformOrigin: `center calc(0% + 150px)`,
-                    filter: `blur(${blurOutPlaylistView ? "2px" : "0px"}) brightness(${blurOutPlaylistView ? 0.5 : 1})`,
-                    transition: "all 0.15s ease-in-out",
-                  }}
+                  style={getBlurOutStyles("center calc(0% + 150px)")}
                 >
                   <PlaylistView
                     playlist={selectedPlaylist}
-                    onSelectPlaylist={setSelectedPlaylist}
+                    currentPlayerState={currentPlayerState}
+                    onPlayTrack={handlePlayTrack}
+                    onShowCover={handleShowCover}
                   />
-
-                  <PlaylistInput
-                    className="absolute bottom-1 left-1 right-1 z-10 px-12 py-12 pt-36"
+                  <PlaylistUpdateInput
                     onSubmit={regenerateSelectedPlaylist}
-                    submitText="Update"
-                    placeholderText="Describe what you want to update..."
                     isLoading={isRegenerating}
-                    collapsable={true}
-                    variant="gray"
                   />
                 </div>
               </div>
@@ -239,6 +335,13 @@ export default function PlaylistGenerator() {
           )}
         </>
       )}
+
+      <CoverModal
+        isOpen={!!coverModalData}
+        onClose={() => setCoverModalData(null)}
+        layoutId={coverModalData?.layoutId}
+        coverUrl={coverModalData?.coverUrl}
+      />
     </div>
   );
 }

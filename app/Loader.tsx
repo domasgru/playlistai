@@ -3,7 +3,13 @@ import styles from "./Loader.module.css";
 
 const bars = Array(12).fill(0);
 
-export function Loader({ color, size = 20 }: { color: string; size: number }) {
+export default function Loader({
+  color = "#fff",
+  size = 20,
+}: {
+  color?: string;
+  size?: number;
+}) {
   return (
     <div
       className={styles.wrapper}

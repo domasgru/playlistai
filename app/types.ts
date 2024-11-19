@@ -1,6 +1,7 @@
 export interface PlaylistInterface {
   id: string;
   spotify_id?: string;
+  spotify_uri?: string;
   name: string;
   description: string;
   tracks: TrackInterface[];
@@ -10,8 +11,8 @@ export interface PlaylistInterface {
 }
 
 export interface TrackInterface {
-  id: string;
-  uri: string;
+  spotify_id: string;
+  spotify_uri: string;
   name: string;
   duration_ms: number;
   external_spotify_url: string;
@@ -35,4 +36,17 @@ export interface TrackInterface {
 export interface GeneratedTrackInterface {
   trackAuthor: string;
   trackName: string;
+}
+
+export interface PlayerStateInterface {
+  isPaused: boolean;
+  currentTrackId: string;
+  currentTrackUri: string;
+  position: number;
+  duration: number;
+}
+
+export interface CoverModalDataInterface {
+  layoutId: string;
+  coverUrl: string;
 }
