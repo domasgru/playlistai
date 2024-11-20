@@ -20,12 +20,13 @@ export default function PlaylistView({
     contextUri,
     trackUri,
   }: {
-    contextUri?: string;
+    contextUri: string | null;
     trackUri: string;
   }) => void;
   onShowCover: (cover: { layoutId: string; coverUrl: string }) => void;
 }) {
   const [dominantColor, setDominantColor] = useState<string>("");
+  const [hoveredTrackId, setHoveredTrackId] = useState<string | null>(null);
 
   const extractColors = async (imageUrl: string) => {
     try {
@@ -52,6 +53,13 @@ export default function PlaylistView({
     return "24px";
   }
 
+  function handleTrackMouseEnter(e: React.MouseEvent, trackId: string) {
+    const target = e.target as HTMLElement;
+    if (target.closest("[data-track-image]")) return;
+    setHoveredTrackId(trackId);
+  }
+  console.log("PlaylistView rerender");
+
   useEffect(() => {
     if (playlist) {
       if (playlist?.tracks[0]?.album.images[0]) {
@@ -71,7 +79,9 @@ export default function PlaylistView({
 
       <div className="relative z-[1] flex gap-14 p-28">
         <motion.div
+          key={playlist.id}
           layoutId={playlist.id}
+          initial={false}
           transition={{
             type: "spring",
             duration: 0.4,
@@ -79,7 +89,7 @@ export default function PlaylistView({
           }}
           whileHover={{
             scale: 1.05,
-            rotate: 1,
+            rotate: Math.random() < 0.5 ? 1 : -1,
             transition: { type: "spring", duration: 0.2, bounce: 0 },
           }}
           onClick={() =>
@@ -109,11 +119,18 @@ export default function PlaylistView({
       </div>
 
       {/* Tracks List */}
-      <div className="relative z-[1] flex flex-col space-y-2 bg-[rgba(0,0,0,0.12)] pb-88 pt-16">
+      <div
+        className="relative z-[1] flex select-none flex-col bg-[rgba(0,0,0,0.12)] pb-88 pt-16"
+        style={{ WebkitUserSelect: "none" }}
+      >
         {playlist.tracks.map((track, index) => (
           <div
             key={`${track.spotify_id}-${index}`}
-            className="group flex cursor-default items-center py-8 pl-16 pr-32 hover:bg-[rgba(255,255,255,0.04)]"
+            className="group flex cursor-default items-center pl-16 pr-32 hover:bg-[rgba(255,255,255,0.04)]"
+            onMouseEnter={(e: React.MouseEvent) =>
+              handleTrackMouseEnter(e, track.spotify_id)
+            }
+            onMouseLeave={() => setHoveredTrackId(null)}
             onClick={() =>
               onPlayTrack({
                 contextUri: playlist.spotify_uri,
@@ -130,10 +147,11 @@ export default function PlaylistView({
               )}
             >
               <span
-                className={clsx("group-hover:hidden", {
+                className={clsx({
                   hidden:
-                    currentPlayerState?.currentTrackId === track.spotify_id &&
-                    !currentPlayerState?.isPaused,
+                    hoveredTrackId === track.spotify_id ||
+                    (currentPlayerState?.currentTrackId === track.spotify_id &&
+                      !currentPlayerState?.isPaused),
                 })}
               >
                 {index + 1}
@@ -141,9 +159,11 @@ export default function PlaylistView({
               <PlayIcon
                 className={clsx("hidden h-[26px] w-[26px]", {
                   "group-hover:block":
-                    currentPlayerState?.currentTrackId !== track.spotify_id ||
-                    (currentPlayerState?.currentTrackId === track.spotify_id &&
-                      currentPlayerState?.isPaused),
+                    hoveredTrackId === track.spotify_id &&
+                    !(
+                      currentPlayerState?.currentTrackId === track.spotify_id &&
+                      !currentPlayerState?.isPaused
+                    ),
                   "translate-x-[6px]": (index + 1).toString().length === 1,
                 })}
               />
@@ -157,6 +177,7 @@ export default function PlaylistView({
                 )}
             </span>
             <motion.div
+              data-track-image
               layoutId={track.spotify_id}
               transition={{
                 type: "spring",
@@ -165,7 +186,7 @@ export default function PlaylistView({
               }}
               whileHover={{
                 scale: 1.1,
-                rotate: 1,
+                rotate: Math.random() < 0.5 ? 1 : -1,
                 transition: { type: "spring", duration: 0.2, bounce: 0 },
               }}
               onClick={(e: React.MouseEvent) => {
@@ -175,11 +196,14 @@ export default function PlaylistView({
                   coverUrl: track.album.images[0].url,
                 });
               }}
-              onMouseEnter={() => {
+              onMouseEnter={(e: React.MouseEvent) => {
+                setHoveredTrackId(null);
+                e.stopPropagation();
                 const preloadImage = new Image();
                 preloadImage.src = track.album.images[0].url;
               }}
-              className="mr-14 h-52 w-52 flex-shrink-0 cursor-zoom-in select-none rounded-[1px]"
+              onMouseLeave={() => setHoveredTrackId(track.spotify_id)}
+              className="mr-14 box-content h-52 w-52 flex-shrink-0 cursor-zoom-in select-none rounded-[1px] py-11"
             >
               <img
                 draggable="false"

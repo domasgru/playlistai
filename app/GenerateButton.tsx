@@ -1,5 +1,4 @@
 import clsx from "clsx";
-import { motion } from "framer-motion";
 
 interface GenerateButtonProps {
   size?: "sm" | "md" | "lg";
@@ -24,7 +23,7 @@ export default function GenerateButton({
     <button
       onClick={onClick}
       className={clsx(
-        "flex-shrink-0 cursor-default rounded-full border border-border-brand bg-background-brand text-baseCompact font-[600] text-foreground-dark hover:bg-background-brandHover",
+        "flex-shrink-0 cursor-default rounded-full border border-border-brand bg-background-brand text-baseCompact font-[600] text-gray-900 [text-shadow:_0_0_1px_rgba(0,0,0,0.18)] hover:bg-background-brandHover",
         paddingClasses,
         className,
       )}

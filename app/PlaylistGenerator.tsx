@@ -1,16 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { useLocalStorage } from "usehooks-ts";
 
+import {
+  PlaylistInterface,
+  PlayerStateInterface,
+  CoverModalDataInterface,
+} from "@/app/types";
 import { signInWithSpotify } from "@/app/actions-auth";
-import { generatePlaylist } from "@/app/actions";
-import { savePlaylist, updatePlaylist } from "@/app/db";
-import { PlaylistInterface } from "@/app/types";
-import { getAllPlaylists } from "@/app/db";
+import { createPlaylist, updatePlaylistInSpotify } from "@/app/actions";
+import { playSpotifyTrack } from "@/app/actions-spotify";
+import { getAllPlaylists, savePlaylistInIDB } from "@/app/db";
+
 import PlaylistView from "@/app/PlaylistView";
 import GenerateButton from "@/app/GenerateButton";
 import PlaylistSelect from "@/app/PlaylistSelect";
@@ -18,8 +23,6 @@ import PlaylistEmptyScreen from "@/app/PlaylistEmptyScreen";
 import PlaylistGenerateNewInput from "@/app/PlaylistGenerateNewInput";
 import FullscreenLoader from "@/app/FullscreenLoader";
 import PlaylistUpdateInput from "@/app/PlaylistUpdateInput";
-import { playTrack } from "./actions-spotify";
-import { PlayerStateInterface, CoverModalDataInterface } from "./types";
 import CoverModal from "@/app/CoverModal";
 
 declare global {
@@ -36,14 +39,15 @@ export default function PlaylistGenerator() {
 
   const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(true);
   const [allPlaylists, setAllPlaylists] = useState<PlaylistInterface[]>([]);
-  const [selectedPlaylist, setSelectedPlaylist] =
-    useLocalStorage<PlaylistInterface | null>("selectedPlaylist", null);
+  const [selectedPlaylistId, setSelectedPlaylistId] =
+    useLocalStorage<String | null>("selectedPlaylistId", null);
+  const selectedPlaylist = allPlaylists.find(
+    (playlist) => playlist.id === selectedPlaylistId,
+  );
   const [showNewPlaylistInput, setShowNewPlaylistInput] = useState(false);
 
-  const [player, setPlayer] = useState<any>(null);
+  const playerRef = useRef<any>(null);
   const [playerDeviceId, setPlayerDeviceId] = useState<string | null>(null);
-  const [isPaused, setIsPaused] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [currentPlayerState, setCurrentPlayerState] =
     useState<PlayerStateInterface | null>(null);
   const [coverModalData, setCoverModalData] =
@@ -61,8 +65,8 @@ export default function PlaylistGenerator() {
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
       setAllPlaylists(sortedPlaylists);
-      if (sortedPlaylists.length > 0 && !selectedPlaylist) {
-        setSelectedPlaylist(sortedPlaylists[0]);
+      if (sortedPlaylists.length > 0 && !selectedPlaylistId) {
+        setSelectedPlaylistId(sortedPlaylists[0].id);
       }
     } catch (error) {
       console.error("Error while loading playlists:", error);
@@ -71,26 +75,33 @@ export default function PlaylistGenerator() {
     }
   }
 
-  const [isGeneratingNewPlaylist, setIsGeneratingNewPlaylist] = useState(
-    searchParams.get("generate") !== null,
-  );
+  const [isGeneratingNewPlaylist, setIsGeneratingNewPlaylist] = useState(false);
   async function generateNewPlaylist(playlistDescriptionInput: string) {
     try {
-      setIsGeneratingNewPlaylist(true);
-
       if (!session?.user) {
         signInWithSpotify(`/?generate=${playlistDescriptionInput}`);
         return;
       }
 
-      const playlist = await generatePlaylist({
+      setIsGeneratingNewPlaylist(true);
+
+      const playlist = await createPlaylist({
         playlistDescription: playlistDescriptionInput,
       });
-
-      await savePlaylist(playlist);
-
-      setSelectedPlaylist(playlist);
+      setSelectedPlaylistId(playlist.id);
+      setShowNewPlaylistInput(false);
+      setIsGeneratingNewPlaylist(false);
+      savePlaylistInIDB(playlist);
       setAllPlaylists((prevPlaylists) => [playlist, ...prevPlaylists]);
+
+      const updatedPlaylist = await updatePlaylistInSpotify(playlist);
+      setSelectedPlaylistId(updatedPlaylist.id);
+      savePlaylistInIDB(updatedPlaylist);
+      setAllPlaylists((prevPlaylists) =>
+        prevPlaylists.map((p) =>
+          p.id === updatedPlaylist.id ? updatedPlaylist : p,
+        ),
+      );
     } catch (error) {
       console.error("Failed to generate playlist:", error);
     } finally {
@@ -107,9 +118,8 @@ export default function PlaylistGenerator() {
 
     try {
       setIsRegenerating(true);
-      const regeneratedPlaylist = await generatePlaylist({
+      const regeneratedPlaylist = await createPlaylist({
         playlistDescription: playlistDescriptionInput,
-        uploadToSpotify: false,
       });
 
       const updatedPlaylist: PlaylistInterface = {
@@ -121,18 +131,20 @@ export default function PlaylistGenerator() {
         updated_at: regeneratedPlaylist.updated_at,
       };
 
+      setSelectedPlaylistId(updatedPlaylist.id);
       setAllPlaylists((prevPlaylists) =>
         prevPlaylists.map((playlist) =>
           playlist.id === updatedPlaylist.id ? updatedPlaylist : playlist,
         ),
       );
+      setIsRegenerating(false);
+      savePlaylistInIDB(updatedPlaylist);
 
-      const result = await updatePlaylist(updatedPlaylist);
-      if (result === null) {
-        throw new Error("Failed to update playlist in database");
-      }
-
-      setSelectedPlaylist(updatedPlaylist);
+      debugger;
+      const updatedPlaylistInSpotify =
+        await updatePlaylistInSpotify(updatedPlaylist);
+      setSelectedPlaylistId(updatedPlaylistInSpotify.id);
+      savePlaylistInIDB(updatedPlaylistInSpotify);
     } catch (error) {
       console.error("Failed to regenerate playlist:", error);
     } finally {
@@ -141,6 +153,7 @@ export default function PlaylistGenerator() {
   }
 
   function loadSpotifyPlayer() {
+    playerRef.current = "loading";
     const script = document.createElement("script");
     script.src = "https://sdk.scdn.co/spotify-player.js";
     script.async = true;
@@ -155,20 +168,23 @@ export default function PlaylistGenerator() {
         },
         volume: 0.5,
       });
-      setPlayer(player);
+      playerRef.current = player;
 
-      player.addListener("ready", ({ device_id }: { device_id: string }) => {
-        setPlayerDeviceId(device_id);
-      });
+      playerRef.current.addListener(
+        "ready",
+        ({ device_id }: { device_id: string }) => {
+          setPlayerDeviceId(device_id);
+        },
+      );
 
-      player.addListener(
+      playerRef.current.addListener(
         "not_ready",
         ({ device_id }: { device_id: string }) => {
           console.error("Device ID has gone offline", device_id);
         },
       );
 
-      player.addListener(
+      playerRef.current.addListener(
         "player_state_changed",
         (newState: {
           paused: boolean;
@@ -190,23 +206,46 @@ export default function PlaylistGenerator() {
         },
       );
 
-      player.connect();
+      playerRef.current.connect();
     };
   }
 
-  async function handlePlayTrack({
+  function unloadSpotifyPlayer() {
+    if (playerRef.current) {
+      playerRef.current.disconnect();
+      playerRef.current = null;
+      setPlayerDeviceId(null);
+      setCurrentPlayerState(null);
+    }
+
+    const spotifyScript = document.querySelector(
+      'script[src="https://sdk.scdn.co/spotify-player.js"]',
+    );
+    if (spotifyScript) {
+      spotifyScript.remove();
+    }
+
+    // Clean up the global callback
+    window.onSpotifyWebPlaybackSDKReady = () => {};
+  }
+
+  function handlePlaySpotifyTrack({
     contextUri,
     trackUri,
   }: {
-    contextUri?: string;
+    contextUri: string | null;
     trackUri: string;
   }) {
     try {
       if (trackUri === currentPlayerState?.currentTrackUri) {
-        player?.togglePlay();
+        playerRef.current?.togglePlay();
       } else {
-        await playTrack({ deviceId: playerDeviceId, trackUri, contextUri });
-        player.activateElement();
+        playSpotifyTrack({
+          deviceId: playerDeviceId,
+          trackUri,
+          contextUri,
+        });
+        playerRef.current?.activateElement();
       }
     } catch (error) {
       console.error("Error playing track:", error);
@@ -249,11 +288,24 @@ export default function PlaylistGenerator() {
     const generateParam = searchParams.get("generate");
     if (generateParam) {
       generateNewPlaylist(generateParam);
-      router.replace("/");
+      setTimeout(() => {
+        router.replace("/");
+      }, 5000);
+    }
+  }, [hasInitialized]);
+
+  useEffect(() => {
+    if (session?.user && selectedPlaylist && !playerRef.current) {
+      console.log("Loading Spotify player");
+      loadSpotifyPlayer();
+      return;
     }
 
-    loadSpotifyPlayer();
-  }, [hasInitialized]);
+    if ((!session?.user || !selectedPlaylist) && playerRef.current) {
+      console.log("Unloading Spotify player");
+      unloadSpotifyPlayer();
+    }
+  }, [session?.user, selectedPlaylist]);
 
   const blurOutPlaylistView =
     (showNewPlaylistInput && !isGeneratingNewPlaylist) || coverModalData;
@@ -284,7 +336,7 @@ export default function PlaylistGenerator() {
                     <PlaylistSelect
                       playlists={allPlaylists}
                       selectedPlaylist={selectedPlaylist}
-                      onSelectPlaylist={setSelectedPlaylist}
+                      onSelectPlaylist={setSelectedPlaylistId}
                     />
 
                     <GenerateButton
@@ -313,7 +365,6 @@ export default function PlaylistGenerator() {
                     )}
                   </AnimatePresence>
                 </div>
-
                 {/* Playlist view */}
                 <div
                   className="relative h-full min-h-0 flex-1"
@@ -322,7 +373,7 @@ export default function PlaylistGenerator() {
                   <PlaylistView
                     playlist={selectedPlaylist}
                     currentPlayerState={currentPlayerState}
-                    onPlayTrack={handlePlayTrack}
+                    onPlayTrack={handlePlaySpotifyTrack}
                     onShowCover={handleShowCover}
                   />
                   <PlaylistUpdateInput

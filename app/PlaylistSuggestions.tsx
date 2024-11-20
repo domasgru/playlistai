@@ -12,7 +12,6 @@ export default function PlaylistSuggestions({
           key={rowIndex}
           className="flex flex-wrap justify-center gap-x-4 gap-y-6"
           exit={{
-            //opacity: 0,
             y: 500,
             scale: 0.9,
             transition: {
@@ -28,7 +27,7 @@ export default function PlaylistSuggestions({
             <button
               onClick={() => onSelect(suggestion)}
               key={`${rowIndex}-${suggestionIndex}`}
-              className="cursor-default rounded-full border border-gray-700 bg-white/[0.03] px-16 py-4 text-sm text-[#808080] hover:bg-neutral-700/50"
+              className="cursor-default rounded-full border border-[#2E2E2E] bg-white/[0.01] px-16 py-2 text-sm text-[#707070] hover:bg-white/[0.03]"
             >
               {suggestion}
             </button>
@@ -41,20 +40,30 @@ export default function PlaylistSuggestions({
 
 const DEFAULT_SUGGESTIONS = [
   [
-    "give me some best rap/trap underground music",
+    "give me some underground rap/trap gems",
     "90s pop",
-    "hmm, I want some melodic sounds, genre doesn't matter",
+    "hmm, I want some melodic tunes, genre doesn't matter",
   ],
-  ["90s pop", "10 most popular songs from 2000s", "most popular hard metal"],
   [
-    "mix of best songs in wide variety of genres",
-    "1950s",
+    "rock",
+    "I want to relax, give me some chill music",
     "hey, classics of all genres",
   ],
-  ["classics of all genres", "going to the beach vibe"],
-  ["classics of all genres"],
-  ["90s pop", "hmm, I want some melodic sounds, genre doesn't matter"],
-  ["90s pop", "10 most popular songs from 2000s", "most popular hard metal"],
-  ["1950s", "hey, classics of all genres"],
-  ["classics of all genres", "going to the beach vibe"],
+  [
+    "I mostly listen to rap and r&b — recommend other genres I’d likely enjoy based on my taste",
+  ],
+  ["Songs with iconic cover art", "Michael Jackson's greatest hits"],
+
+  ["best of Playboi Carti"],
+  ["love fred again, flume, salute, give me something new but similar", "rap"],
+  [
+    "I want to explore classic music—create the perfect starter playlist for me",
+    "chill electronic music for late night",
+  ],
+  ["gym playlist, I like hip hop, r&b and rock"],
+  ["hidden gems of 80s synthwave", "top 10 upbeat indie tracks"],
+  ["best modern classical music", "starter metal playlist"],
+  ["vibes for a rainy autumn day"],
+  ["most underrated techno tracks", "songs for late-night drives"],
+  ["1950s classics", "perfect beach day playlist", "songs to boost your mood"],
 ];

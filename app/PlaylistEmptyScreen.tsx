@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
 import PlaylistSkeleton from "@/app/PlaylistSkeleton";
 import { signInWithSpotify } from "./actions-auth";
+import { useSearchParams } from "next/navigation";
 
 interface PlaylistEmptyScreenProps {
   onSubmit: (input: string) => void;
@@ -17,7 +18,8 @@ export default function PlaylistEmptyScreen({
   isLoading,
   isLoggedIn,
 }: PlaylistEmptyScreenProps) {
-  const [input, setInput] = useState("");
+  const searchParams = useSearchParams();
+  const [input, setInput] = useState(searchParams.get("generate") || "");
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -50,11 +52,11 @@ export default function PlaylistEmptyScreen({
     >
       {!isLoggedIn && !isLoading && (
         <button
-          className="absolute top-32 mx-auto flex items-center gap-10 rounded-full border border-input bg-gray-800 px-20 py-8 text-baseCompact text-gray-300 hover:text-white"
+          className="group absolute top-32 mx-auto flex items-center gap-10 rounded-full border border-input bg-gray-800 px-16 py-8 text-[16px] leading-[22px] text-gray-300 hover:text-white"
           onClick={() => signInWithSpotify()}
         >
           Login
-          <span className="flex h-24 w-24 items-center justify-center rounded-[3px] bg-[#3A3A3A] text-[16px] font-medium shadow-[0_1px_1px_0_rgba(0,0,0,0.26),inset_0_0.5px_1px_0_rgba(255,255,255,0.13)]">
+          <span className="flex h-20 w-20 items-center justify-center rounded-[3px] bg-[#3A3A3A] text-[14px] font-medium shadow-[0_1px_1px_0_rgba(0,0,0,0.26),inset_0_0.5px_1px_0_rgba(255,255,255,0.13)] group-hover:text-gray-300">
             L
           </span>
         </button>
@@ -70,7 +72,7 @@ export default function PlaylistEmptyScreen({
           </motion.h1>
         )}
       </AnimatePresence>
-      <div className="z-10 flex h-full flex-col items-center gap-16">
+      <div className="z-10 flex h-full flex-col items-center gap-20">
         <motion.div
           layout
           initial={false}

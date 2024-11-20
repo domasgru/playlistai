@@ -24,7 +24,7 @@ export default function PlaylistUpdateInput({
       onChange={setInputValue}
       onSubmit={handleSubmit}
       submitButtonText="Update"
-      placeholderText="Describe what you want to update..."
+      placeholderText="Describe what would you like to listen..."
       isLoading={isLoading}
       collapsable={true}
       backgroundColor="gray"

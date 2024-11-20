@@ -63,19 +63,6 @@ export async function getPlaylistDB() {
   return DatabaseService.getInstance().getDB();
 }
 
-// Helper functions for common operations
-export async function savePlaylist(playlist: PlaylistInterface) {
-  const db = await getPlaylistDB();
-  if (!db) return null;
-
-  try {
-    return await db.put("playlists", playlist);
-  } catch (error) {
-    console.error("Failed to save playlist:", error);
-    return null;
-  }
-}
-
 export async function getPlaylist(id: string) {
   const db = await getPlaylistDB();
   if (!db) return null;
@@ -100,7 +87,7 @@ export async function getAllPlaylists() {
   }
 }
 
-export async function updatePlaylist(
+export async function savePlaylistInIDB(
   playlist: PlaylistInterface,
 ): Promise<string | null> {
   const db = await getPlaylistDB();

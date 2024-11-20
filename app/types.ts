@@ -1,7 +1,7 @@
 export interface PlaylistInterface {
   id: string;
-  spotify_id?: string;
-  spotify_uri?: string;
+  spotify_id: string | null;
+  spotify_uri: string | null;
   name: string;
   description: string;
   tracks: TrackInterface[];

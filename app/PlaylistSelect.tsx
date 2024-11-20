@@ -10,18 +10,27 @@ export default function PlaylistSelect({
 }: {
   playlists: PlaylistInterface[];
   selectedPlaylist: PlaylistInterface | null;
-  onSelectPlaylist: (selectedPlaylist: PlaylistInterface) => void;
+  onSelectPlaylist: (selectedPlaylist: String) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
+  function handleAnimationStart() {
+    setIsAnimating(true);
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 150);
+  }
+
   return (
-    <div className="relative w-full min-w-0 flex-1 select-none">
+    <div
+      className="relative flex w-full min-w-0 flex-1 select-none justify-center"
+      style={{ WebkitUserSelect: "none" }}
+    >
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        //onMouseEnter={() => setIsOpen(true)}
         layoutId="playlist-select"
-        className={`group flex w-full cursor-default items-center rounded border border-input bg-gray-800 py-10 pl-16 pr-20 text-white shadow-innerGlow hover:bg-gray-750`}
+        className={`group flex w-full cursor-default select-none items-center rounded border border-input bg-gray-800 py-10 pl-16 pr-20 text-white shadow-innerGlow hover:bg-gray-750`}
         transition={{
           duration: 0.25,
           type: "spring",
@@ -41,7 +50,7 @@ export default function PlaylistSelect({
             className="mr-16 h-52 w-52 rounded-full saturate-[0.3] transition-[filter] duration-150 ease-in-out group-hover:saturate-[1]"
           />
         )}
-        <motion.span layout="position" className="mr-auto truncate">
+        <motion.span layout="position" className="mr-auto truncate pr-16">
           {selectedPlaylist?.name || "Select selectedPlaylist"}
         </motion.span>
         <motion.div layoutId="playlist-chevron" layout="position">
@@ -64,17 +73,17 @@ export default function PlaylistSelect({
               transformStyle: "preserve-3d",
             }}
             onMouseLeave={() => setIsOpen(false)}
-            onLayoutAnimationStart={() => setIsAnimating(true)}
+            onLayoutAnimationStart={handleAnimationStart}
             onLayoutAnimationComplete={() => setIsAnimating(false)}
-            className="absolute top-0 z-10 max-h-[228px] w-full overflow-auto rounded border border-input bg-gray-800 py-12 shadow-elevationWithInnerGlow"
+            className="absolute top-0 z-10 max-h-[228px] w-full select-none overflow-auto rounded border border-input bg-gray-800 py-12 shadow-elevationWithInnerGlow"
           >
             {playlists.map((playlist) => (
               <div
                 key={playlist.id}
-                className={`flex w-full items-center gap-12 px-16 py-8 text-left ${isAnimating ? "pointer-events-none" : "hover:cursor-default hover:bg-gray-700"}`}
+                className={`flex w-full select-none items-center gap-12 px-16 py-12 text-left ${isAnimating ? "pointer-events-none" : "hover:cursor-default hover:bg-gray-700"}`}
                 onClick={() => {
                   if (!isAnimating) {
-                    onSelectPlaylist(playlist);
+                    onSelectPlaylist(playlist.id);
                     setIsOpen(false);
                   }
                 }}
@@ -87,9 +96,22 @@ export default function PlaylistSelect({
                     ].url
                   }
                   alt=""
+                  transition={{
+                    duration: 0.15,
+                    type: "spring",
+                    bounce: 0,
+                  }}
                   className="h-32 w-32 rounded"
                 />
-                <motion.span layout="position" className="truncate">
+                <motion.span
+                  layout="position"
+                  className="truncate"
+                  transition={{
+                    duration: 0.15,
+                    type: "spring",
+                    bounce: 0,
+                  }}
+                >
                   {playlist.name}
                 </motion.span>
               </div>

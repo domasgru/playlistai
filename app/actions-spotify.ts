@@ -5,6 +5,14 @@ import { TrackInterface } from "./types";
 
 const SPOTIFY_API_URL = "https://api.spotify.com/v1";
 
+async function getAuthenticatedSession() {
+  const session = await auth();
+  if (!session?.access_token) {
+    throw new Error("No Spotify access token found");
+  }
+  return session;
+}
+
 export async function getSpotifyTrack({
   trackAuthor,
   trackName,
@@ -13,11 +21,7 @@ export async function getSpotifyTrack({
   trackName: string;
 }): Promise<TrackInterface | null> {
   try {
-    const session = await auth();
-
-    if (!session?.access_token) {
-      throw new Error("No Spotify access token found");
-    }
+    const session = await getAuthenticatedSession();
 
     const searchQuery = encodeURIComponent(`${trackAuthor} ${trackName}`);
 
@@ -67,22 +71,17 @@ export async function getSpotifyTrack({
   }
 }
 
-export async function createPlaylist({
-  tracks,
+export async function createSpotifyPlaylist({
   name = "My Generated Playlist",
   description = "Playlist created by my app",
 }: {
-  tracks: string[];
   name?: string;
   description?: string;
 }): Promise<{
   id: string;
   uri: string;
 }> {
-  const session = await auth();
-  if (!session?.access_token) {
-    throw new Error("No Spotify access token found");
-  }
+  const session = await getAuthenticatedSession();
 
   const createPlaylistResponse = await fetch(
     `${SPOTIFY_API_URL}/users/${session.account_id}/playlists`,
@@ -100,16 +99,30 @@ export async function createPlaylist({
     },
   );
 
-  const playlist = await createPlaylistResponse.json();
-
   if (!createPlaylistResponse.ok) {
     throw new Error(
       `SpotifyAPI error, failed to create playlist: ${createPlaylistResponse.status}`,
     );
   }
 
+  const playlist = await createPlaylistResponse.json();
+  return {
+    id: playlist.id,
+    uri: playlist.uri,
+  };
+}
+
+export async function addTracksToSpotifyPlaylist({
+  playlistId,
+  tracks,
+}: {
+  playlistId: string;
+  tracks: string[];
+}): Promise<{ snapshot_id: string }> {
+  const session = await getAuthenticatedSession();
+
   const addTracksResponse = await fetch(
-    `${SPOTIFY_API_URL}/playlists/${playlist.id}/tracks`,
+    `${SPOTIFY_API_URL}/playlists/${playlistId}/tracks`,
     {
       method: "POST",
       headers: {
@@ -128,26 +141,21 @@ export async function createPlaylist({
     );
   }
 
-  return {
-    id: playlist.id,
-    uri: playlist.uri,
-  };
+  const response = await addTracksResponse.json();
+  return { snapshot_id: response.snapshot_id };
 }
 
-export async function playTrack({
+export async function playSpotifyTrack({
   trackUri,
   deviceId,
   contextUri,
 }: {
   trackUri: string;
   deviceId: string | null;
-  contextUri?: string;
+  contextUri: string | null;
 }): Promise<void> {
   try {
-    const session = await auth();
-    if (!session?.access_token) {
-      throw new Error("No Spotify access token found");
-    }
+    const session = await getAuthenticatedSession();
     console.log("deviceId", deviceId);
     console.log("contextUri", contextUri);
 
@@ -184,6 +192,44 @@ export async function playTrack({
     }
   } catch (error) {
     console.error("Error playing track:", error);
+    throw error;
+  }
+}
+
+export async function replaceSpotifyPlaylistTracks({
+  playlistId,
+  trackURIs,
+}: {
+  playlistId: string;
+  trackURIs: string[];
+}): Promise<{ snapshot_id: string }> {
+  try {
+    const session = await getAuthenticatedSession();
+
+    const replaceTracksResponse = await fetch(
+      `${SPOTIFY_API_URL}/playlists/${playlistId}/tracks`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          uris: trackURIs,
+        }),
+      },
+    );
+
+    if (!replaceTracksResponse.ok) {
+      throw new Error(
+        `SpotifyAPI error, failed to update playlist: ${replaceTracksResponse.status}`,
+      );
+    }
+
+    const response = await replaceTracksResponse.json();
+    return { snapshot_id: response.snapshot_id };
+  } catch (error) {
+    console.error("Error updating playlist:", error);
     throw error;
   }
 }

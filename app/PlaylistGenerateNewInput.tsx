@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import clsx from "clsx";
 import { useState } from "react";
 import PlaylistInput from "@/app/PlaylistInput";
+import PlaylistSuggestions from "@/app/PlaylistSuggestions";
 
 interface PlaylistGenerateNewInputProps {
   isLoading: boolean;
@@ -35,8 +36,8 @@ export default function PlaylistGenerateNewInput({
         bounce: 0,
       }}
       className={clsx(
-        "absolute top-0 z-10 box-content w-full",
-        !isLoading && "px-[100px] pb-[80px]",
+        "absolute top-[-40px] z-10 box-content w-full",
+        !isLoading && "px-[150px] pb-[80px] pt-[40px]",
       )}
       onMouseLeave={onMouseLeave}
     >
