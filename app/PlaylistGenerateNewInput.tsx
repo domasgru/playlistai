@@ -35,8 +35,8 @@ export default function PlaylistGenerateNewInput({
         bounce: 0,
       }}
       className={clsx(
-        "absolute top-[-40px] z-10 box-content w-full",
-        !isLoading && "px-[150px] pb-[80px] pt-[40px]",
+        "absolute top-[-40px] z-10 box-content w-full pt-[40px]",
+        !isLoading && "px-[150px] pb-[80px]",
       )}
       onMouseLeave={onMouseLeave}
     >
