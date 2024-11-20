@@ -10,7 +10,7 @@ export default function PlaylistSelect({
 }: {
   playlists: PlaylistInterface[];
   selectedPlaylist: PlaylistInterface | null;
-  onSelectPlaylist: (selectedPlaylist: String) => void;
+  onSelectPlaylist: (selectedPlaylist: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);

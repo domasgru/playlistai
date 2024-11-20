@@ -1,3 +1,5 @@
+"use client";
+
 import { useRef, useState, useEffect } from "react";
 import PlaylistInput from "@/app/PlaylistInput";
 import PlaylistSuggestions from "@/app/PlaylistSuggestions";

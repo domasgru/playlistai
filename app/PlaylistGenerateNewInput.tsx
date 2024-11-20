@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import clsx from "clsx";
 import { useState } from "react";
 import PlaylistInput from "@/app/PlaylistInput";
-import PlaylistSuggestions from "@/app/PlaylistSuggestions";
 
 interface PlaylistGenerateNewInputProps {
   isLoading: boolean;

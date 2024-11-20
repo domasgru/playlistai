@@ -1,4 +1,3 @@
-import { clsx } from "clsx";
 import styles from "./Loader.module.css";
 
 const bars = Array(12).fill(0);

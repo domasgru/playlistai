@@ -34,13 +34,10 @@ export default function PlaylistView({
         return;
       }
 
-      const dominantColor = await prominent(
-        playlist.tracks[0].album.images[0].url,
-        {
-          amount: 1,
-          format: "hex",
-        },
-      );
+      const dominantColor = await prominent(imageUrl, {
+        amount: 1,
+        format: "hex",
+      });
       setDominantColor(dominantColor as string);
     } catch (error) {
       console.error("Error extracting colors:", error);
@@ -62,8 +59,10 @@ export default function PlaylistView({
 
   useEffect(() => {
     if (playlist) {
-      if (playlist?.tracks[0]?.album.images[0]) {
-        extractColors(playlist.tracks[0].album.images[0].url);
+      console.log("playlist", playlist);
+      const playlistCoverArtUrl = playlist?.tracks[0]?.album?.images[0]?.url;
+      if (playlistCoverArtUrl) {
+        extractColors(playlistCoverArtUrl);
       }
     }
   }, [playlist]);

@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { useLocalStorage } from "usehooks-ts";
+import Image from "next/image";
 
 import {
   PlaylistInterface,
@@ -39,8 +40,9 @@ export default function PlaylistGenerator() {
 
   const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(true);
   const [allPlaylists, setAllPlaylists] = useState<PlaylistInterface[]>([]);
-  const [selectedPlaylistId, setSelectedPlaylistId] =
-    useLocalStorage<String | null>("selectedPlaylistId", null);
+  const [selectedPlaylistId, setSelectedPlaylistId] = useLocalStorage<
+    string | null
+  >("selectedPlaylistId", null);
   const selectedPlaylist = allPlaylists.find(
     (playlist) => playlist.id === selectedPlaylistId,
   );
@@ -163,7 +165,7 @@ export default function PlaylistGenerator() {
     window.onSpotifyWebPlaybackSDKReady = () => {
       const player = new window.Spotify.Player({
         name: "Playlsit App Web Player",
-        getOAuthToken: (cb: any) => {
+        getOAuthToken: (cb: (token: string | undefined) => void) => {
           cb(session?.access_token);
         },
         volume: 0.5,
@@ -346,9 +348,11 @@ export default function PlaylistGenerator() {
                       }
                     >
                       <span className="hidden sm:inline">New playlist</span>
-                      <img
+                      <Image
                         src="/plus.svg"
                         alt="New playlist"
+                        width={17}
+                        height={17}
                         className="box-content h-[17px] w-[17px] p-[5px] sm:hidden"
                       />
                     </GenerateButton>
