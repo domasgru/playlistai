@@ -49,7 +49,7 @@ export default function PlaylistEmptyScreen({
     <div
       className={clsx(
         "flex h-full w-full flex-col items-center text-white",
-        isLoading ? "pb-24 pt-24" : "pt-[24vh]",
+        isLoading ? "pb-24 pt-24" : "pt-[28vh]",
       )}
     >
       {!isLoggedIn && !isLoading && (
