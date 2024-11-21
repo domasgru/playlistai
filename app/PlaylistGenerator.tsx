@@ -313,7 +313,7 @@ export default function PlaylistGenerator() {
     (showNewPlaylistInput && !isGeneratingNewPlaylist) || coverModalData;
 
   return (
-    <div className="h-[100vh]">
+    <div className="h-[100vh] w-full">
       {!hasInitialized && <FullscreenLoader />}
 
       {hasInitialized && (

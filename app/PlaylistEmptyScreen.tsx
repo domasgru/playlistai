@@ -48,7 +48,7 @@ export default function PlaylistEmptyScreen({
   return (
     <div
       className={clsx(
-        "flex h-full flex-col items-center text-white",
+        "flex h-full w-full flex-col items-center text-white",
         isLoading ? "pb-24 pt-24" : "pt-[24vh]",
       )}
     >
@@ -66,7 +66,7 @@ export default function PlaylistEmptyScreen({
       <AnimatePresence mode="popLayout">
         {!isLoading && (
           <motion.h1
-            className="mb-[72px] text-heading font-black"
+            className="mb-[72px] text-center text-heading font-black"
             exit={{ y: -300, opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.5, type: "spring", bounce: 0 }}
           >
@@ -74,12 +74,13 @@ export default function PlaylistEmptyScreen({
           </motion.h1>
         )}
       </AnimatePresence>
-      <div className="z-10 flex h-full flex-col items-center gap-20">
+      <div className="z-10 flex h-full w-full flex-col items-center gap-20">
         <motion.div
           layout
           initial={false}
           animate={{ width: isLoading ? 592 : 560 }}
           transition={{ duration: 0.5, type: "spring", bounce: 0, delay: 0.05 }}
+          className="max-w-full"
         >
           <PlaylistInput
             ref={inputRef}
