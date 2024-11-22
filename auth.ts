@@ -13,7 +13,19 @@ declare module "next-auth" {
 const baseConfig = {
   providers: [
     Spotify({
-      authorization: `https://accounts.spotify.com/authorize?scope=${encodeURIComponent("user-read-private user-read-email playlist-read-private playlist-modify-public playlist-modify-private user-modify-playback-state user-read-playback-state user-read-currently-playing streaming")}`,
+      authorization:
+        "https://accounts.spotify.com/authorize?scope=" +
+        encodeURIComponent(
+          "user-read-private " +
+            "user-read-email " +
+            "playlist-read-private " +
+            "playlist-modify-public " +
+            "playlist-modify-private " +
+            "user-modify-playback-state " +
+            "user-read-playback-state " +
+            "user-read-currently-playing " +
+            "streaming",
+        ).trim(),
     }),
   ],
   callbacks: {
@@ -66,11 +78,6 @@ const baseConfig = {
       session.access_token = token.access_token;
       return session;
     },
-    authorized({ auth, request }: { auth: any; request: any }) {
-      console.log("authorized auth--->", auth);
-      console.log("authorized request--->", request);
-      return !!auth;
-    },
   },
 };
 export const { handlers, signIn, signOut } = NextAuth(baseConfig);
@@ -83,8 +90,6 @@ const serverConfig = {
       session.account_id = token.account_id;
       session.access_token_expires_at = token.access_token_expires_at;
       session.refresh_token = token.refresh_token;
-
-      console.log("session callback--->", session);
 
       return session;
     },

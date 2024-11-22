@@ -55,11 +55,9 @@ export default function PlaylistView({
     if (target.closest("[data-track-image]")) return;
     setHoveredTrackId(trackId);
   }
-  console.log("PlaylistView rerender");
 
   useEffect(() => {
     if (playlist) {
-      console.log("playlist", playlist);
       const playlistCoverArtUrl = playlist?.tracks[0]?.album?.images[0]?.url;
       if (playlistCoverArtUrl) {
         extractColors(playlistCoverArtUrl);
@@ -177,6 +175,7 @@ export default function PlaylistView({
             </span>
             <motion.div
               data-track-image
+              key={`${track.spotify_id}-${index}-cover`}
               layoutId={track.spotify_id}
               transition={{
                 type: "spring",

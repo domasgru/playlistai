@@ -7,8 +7,7 @@ import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
 import PlaylistSkeleton from "@/app/PlaylistSkeleton";
 import { signInWithSpotify } from "./actions-auth";
-import { useSearchParams } from "next/navigation";
-
+import Image from "next/image";
 interface PlaylistEmptyScreenProps {
   onSubmit: (input: string) => void;
   isLoggedIn: boolean;
@@ -20,8 +19,9 @@ export default function PlaylistEmptyScreen({
   isLoading,
   isLoggedIn,
 }: PlaylistEmptyScreenProps) {
-  const searchParams = useSearchParams();
-  const [input, setInput] = useState(searchParams.get("generate") || "");
+  const [input, setInput] = useState(
+    () => sessionStorage.getItem("generate") || "",
+  );
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -49,15 +49,22 @@ export default function PlaylistEmptyScreen({
     <div
       className={clsx(
         "flex h-full w-full flex-col items-center text-white",
-        isLoading ? "pb-24 pt-24" : "pt-[28vh]",
+        isLoading ? "pb-24 pt-24" : "pt-[24vh]",
       )}
     >
+      <Image
+        className="absolute left-24 top-[39px] opacity-[0.85] sm:left-auto"
+        src="/logo.png"
+        alt="Playlistai"
+        width={131}
+        height={31.7}
+      />
       {!isLoggedIn && !isLoading && (
         <button
-          className="group absolute top-32 mx-auto flex items-center gap-10 rounded-full border border-input bg-gray-800 px-16 py-8 text-[16px] leading-[22px] text-gray-300 hover:text-white"
+          className="group absolute right-24 top-[36px] mx-auto flex items-center gap-10 rounded-full border border-input bg-gray-800 px-16 py-8 text-[16px] leading-[22px] text-gray-300 hover:text-white sm:right-48"
           onClick={() => signInWithSpotify()}
         >
-          Login
+          Login with Spotify
           <span className="flex h-20 w-20 items-center justify-center rounded-[3px] bg-[#3A3A3A] text-[14px] font-medium shadow-[0_1px_1px_0_rgba(0,0,0,0.26),inset_0_0.5px_1px_0_rgba(255,255,255,0.13)] group-hover:text-gray-300">
             L
           </span>
@@ -66,11 +73,11 @@ export default function PlaylistEmptyScreen({
       <AnimatePresence mode="popLayout">
         {!isLoading && (
           <motion.h1
-            className="mb-[72px] text-center text-heading font-black"
+            className="mb-[70px] text-center text-heading font-black"
             exit={{ y: -300, opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.5, type: "spring", bounce: 0 }}
           >
-            Generate your first playlist
+            Turn ideas into Playlists. <br /> For Spotify Premium.
           </motion.h1>
         )}
       </AnimatePresence>
@@ -109,7 +116,7 @@ export default function PlaylistEmptyScreen({
         )}
         <AnimatePresence mode="popLayout">
           {!isLoading && (
-            <motion.div className="w-[100vw]">
+            <motion.div className="w-[100vw] px-20">
               <PlaylistSuggestions onSelect={handleSuggestionSelect} />
             </motion.div>
           )}

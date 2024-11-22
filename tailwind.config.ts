@@ -45,7 +45,7 @@ const config: Config = {
         base: ["1.25rem", "1.6em"],
         baseCompact: ["1.25rem", "1.4em"],
         lg: ["1.5rem", "1.6em"],
-        heading: ["2.375rem", "1.4em"],
+        heading: ["2.375rem", "1.63em"],
       },
       fontFamily: {
         sans: ["Nunito Sans", "system ui"],

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { useSearchParams, useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { useLocalStorage } from "usehooks-ts";
 import Image from "next/image";
@@ -35,8 +34,6 @@ declare global {
 
 export default function PlaylistGenerator() {
   const { data: session, status } = useSession();
-  const searchParams = useSearchParams();
-  const router = useRouter();
 
   const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(true);
   const [allPlaylists, setAllPlaylists] = useState<PlaylistInterface[]>([]);
@@ -81,7 +78,8 @@ export default function PlaylistGenerator() {
   async function generateNewPlaylist(playlistDescriptionInput: string) {
     try {
       if (!session?.user) {
-        signInWithSpotify(`/?generate=${playlistDescriptionInput}`);
+        sessionStorage.setItem("generate", playlistDescriptionInput);
+        signInWithSpotify();
         return;
       }
 
@@ -287,24 +285,20 @@ export default function PlaylistGenerator() {
   useEffect(() => {
     if (!hasInitialized) return;
 
-    const generateParam = searchParams.get("generate");
+    const generateParam = sessionStorage.getItem("generate");
     if (generateParam) {
       generateNewPlaylist(generateParam);
-      setTimeout(() => {
-        router.replace("/");
-      }, 5000);
+      sessionStorage.removeItem("generate");
     }
   }, [hasInitialized]);
 
   useEffect(() => {
     if (session?.user && selectedPlaylist && !playerRef.current) {
-      console.log("Loading Spotify player");
       loadSpotifyPlayer();
       return;
     }
 
     if ((!session?.user || !selectedPlaylist) && playerRef.current) {
-      console.log("Unloading Spotify player");
       unloadSpotifyPlayer();
     }
   }, [session?.user, selectedPlaylist]);
@@ -390,6 +384,14 @@ export default function PlaylistGenerator() {
           )}
         </>
       )}
+
+      <Image
+        src="/logo.png"
+        alt="Playlistai"
+        width={110}
+        height={26.6}
+        className="absolute bottom-16 right-24 z-[-1] opacity-[0.75]"
+      />
 
       <CoverModal
         isOpen={!!coverModalData}

@@ -27,7 +27,7 @@ export default function PlaylistSuggestions({
             <button
               onClick={() => onSelect(suggestion)}
               key={`${rowIndex}-${suggestionIndex}`}
-              className="cursor-default rounded-full border border-[#2E2E2E] bg-white/[0.01] px-16 py-2 text-sm text-[#707070] hover:bg-white/[0.03]"
+              className="cursor-default rounded-full border border-[#2E2E2E] bg-white/[0.01] px-16 py-2 text-sm text-[#707070] hover:bg-white/[0.05]"
             >
               {suggestion}
             </button>
@@ -49,21 +49,23 @@ const DEFAULT_SUGGESTIONS = [
     "I want to relax, give me some chill music",
     "hey, classics of all genres",
   ],
-  [
-    "I mostly listen to rap and r&b — recommend other genres I’d likely enjoy based on my taste",
-  ],
-  ["Songs with iconic cover art", "Michael Jackson's greatest hits"],
 
+  ["songs with iconic cover art", "Michael Jackson's greatest hits"],
   ["best of Playboi Carti"],
   ["love fred again, flume, salute, give me something new but similar", "rap"],
+
   [
-    "I want to explore classic music—create the perfect starter playlist for me",
+    "I want to explore classic music - create the perfect starter playlist for me",
     "chill electronic music for late night",
   ],
+
   ["gym playlist, I like hip hop, r&b and rock"],
+  [
+    "I mostly listen to rap and r&b - recommend other genres I’d likely enjoy based on my taste",
+  ],
   ["hidden gems of 80s synthwave", "top 10 upbeat indie tracks"],
   ["best modern classical music", "starter metal playlist"],
   ["vibes for a rainy autumn day"],
-  ["most underrated techno tracks", "songs for late-night drives"],
+  ["most underrated techno tracks", "songs for late - night drives"],
   ["1950s classics", "perfect beach day playlist", "songs to boost your mood"],
 ];

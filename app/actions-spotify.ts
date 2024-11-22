@@ -156,8 +156,6 @@ export async function playSpotifyTrack({
 }): Promise<void> {
   try {
     const session = await getAuthenticatedSession();
-    console.log("deviceId", deviceId);
-    console.log("contextUri", contextUri);
 
     const deviceQueryParam = deviceId ? `?device_id=${deviceId}` : "";
     const response = await fetch(
