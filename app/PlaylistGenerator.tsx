@@ -385,13 +385,15 @@ export default function PlaylistGenerator() {
         </>
       )}
 
-      <Image
-        src="/logo.png"
-        alt="Playlistai"
-        width={110}
-        height={26.6}
-        className="absolute bottom-16 right-24 z-[-1] opacity-[0.75]"
-      />
+      {session?.user && selectedPlaylist && (
+        <Image
+          src="/logo.png"
+          alt="Playlistai"
+          width={110}
+          height={26.6}
+          className="absolute bottom-16 right-24 z-[-1] opacity-[0.75]"
+        />
+      )}
 
       <CoverModal
         isOpen={!!coverModalData}
