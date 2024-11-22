@@ -140,7 +140,6 @@ export default function PlaylistGenerator() {
       setIsRegenerating(false);
       savePlaylistInIDB(updatedPlaylist);
 
-      debugger;
       const updatedPlaylistInSpotify =
         await updatePlaylistInSpotify(updatedPlaylist);
       setSelectedPlaylistId(updatedPlaylistInSpotify.id);

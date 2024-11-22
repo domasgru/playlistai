@@ -5,11 +5,15 @@ import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { GeneratedTrackInterface } from "./types";
 
+const MODEL = "gpt-4o-mini-2024-07-18";
+
 export async function getGeneratedTrackList({
   prompt,
-  count = 20,
+  model = "gpt-4o-mini-2024-07-18",
+  count = 40,
 }: {
   prompt: string;
+  model?: "gpt-4o-mini-2024-07-18" | "gpt-4o-2024-08-06";
   count?: number;
 }): Promise<{ tracks: GeneratedTrackInterface[]; playlistName: string }> {
   try {
@@ -18,7 +22,7 @@ export async function getGeneratedTrackList({
     });
 
     const response = await openai.beta.chat.completions.parse({
-      model: "gpt-4o-2024-08-06",
+      model,
       messages: [
         {
           role: "system",

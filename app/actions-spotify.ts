@@ -23,10 +23,14 @@ export async function getSpotifyTrack({
   try {
     const session = await getAuthenticatedSession();
 
-    const searchQuery = encodeURIComponent(`${trackAuthor} ${trackName}`);
+    const searchParams = new URLSearchParams({
+      q: `artist:${trackAuthor} track:${trackName}`,
+      type: "track",
+      limit: "1",
+    });
 
     const response = await fetch(
-      `${SPOTIFY_API_URL}/search?q=${searchQuery}&type=track&limit=1`,
+      `${SPOTIFY_API_URL}/search?${searchParams.toString()}`,
       {
         headers: {
           Authorization: `Bearer ${session.access_token}`,

@@ -34,7 +34,7 @@ function filterUniqueTracks<T extends { spotify_uri: string }>(
 
 export async function createPlaylist({
   playlistDescription,
-  songCount = 20,
+  songCount = 40,
 }: {
   playlistDescription: string;
   songCount?: number;
