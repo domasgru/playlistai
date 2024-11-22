@@ -5,8 +5,6 @@ import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { GeneratedTrackInterface } from "./types";
 
-const MODEL = "gpt-4o-mini-2024-07-18";
-
 export async function getGeneratedTrackList({
   prompt,
   model = "gpt-4o-mini-2024-07-18",
