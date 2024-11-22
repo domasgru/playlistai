@@ -92,13 +92,13 @@ export default function PlaylistView({
           onClick={() =>
             onShowCover({
               layoutId: playlist.id,
-              coverUrl: playlist.tracks[0].album.images[0].url,
+              coverUrl: playlist.tracks[0].album.images[0]?.url,
             })
           }
           className="h-[96px] w-[96px] flex-shrink-0 cursor-zoom-in select-none bg-gray-700 shadow-sm"
         >
           <img
-            src={playlist.tracks[0].album.images[0].url}
+            src={playlist.tracks[0].album.images[0]?.url}
             alt={playlist.name}
             draggable="false"
             className="h-full w-full rounded-[1px]"
@@ -191,21 +191,21 @@ export default function PlaylistView({
                 e.stopPropagation();
                 onShowCover({
                   layoutId: track.spotify_id,
-                  coverUrl: track.album.images[0].url,
+                  coverUrl: track.album.images[0]?.url,
                 });
               }}
               onMouseEnter={(e: React.MouseEvent) => {
                 setHoveredTrackId(null);
                 e.stopPropagation();
                 const preloadImage = new Image();
-                preloadImage.src = track.album.images[0].url;
+                preloadImage.src = track.album.images[0]?.url;
               }}
               onMouseLeave={() => setHoveredTrackId(track.spotify_id)}
               className="mr-14 box-content h-52 w-52 flex-shrink-0 cursor-zoom-in select-none rounded-[1px] py-11"
             >
               <img
                 draggable="false"
-                src={track.album.images[1].url}
+                src={track.album.images[1]?.url}
                 alt={track.album.name}
                 className="h-full w-full rounded-[1px]"
               />

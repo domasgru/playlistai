@@ -45,7 +45,7 @@ export default function PlaylistSelect({
         {selectedPlaylist && (
           <motion.img
             layout="position"
-            src={selectedPlaylist.tracks[0]?.album.images[0].url}
+            src={selectedPlaylist.tracks[0]?.album.images[0]?.url}
             alt="Album cover"
             className="mr-16 h-52 w-52 rounded-full saturate-[0.3] transition-[filter] duration-150 ease-in-out group-hover:saturate-[1]"
           />
@@ -93,7 +93,7 @@ export default function PlaylistSelect({
                   src={
                     playlist.tracks[0]?.album.images[
                       playlist.tracks[0]?.album.images.length - 1
-                    ].url
+                    ]?.url
                   }
                   alt=""
                   transition={{
