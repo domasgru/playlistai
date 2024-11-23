@@ -66,7 +66,7 @@ export default function PlaylistView({
   }, [playlist]);
 
   return (
-    <div className="custom-scrollbar relative h-full min-w-0 flex-1 overflow-y-auto rounded-xl border border-input bg-gray-800">
+    <div className="custom-scrollbar relative h-full min-w-0 flex-1 overflow-y-auto rounded border border-input bg-gray-800">
       <div
         className="absolute inset-0 z-0"
         style={{
