@@ -161,7 +161,7 @@ export default function PlaylistGenerator() {
 
     window.onSpotifyWebPlaybackSDKReady = () => {
       const player = new window.Spotify.Player({
-        name: "Playlsit App Web Player",
+        name: "Playlistai.com Player",
         getOAuthToken: (cb: (token: string | undefined) => void) => {
           cb(session?.access_token);
         },
