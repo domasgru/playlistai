@@ -1,13 +1,4 @@
-import { auth } from "@/auth";
-import { NextResponse } from "next/server";
-
-export default auth(async (req) => {
-  const isLoggedIn = req.auth;
-
-  const session = await auth();
-
-  return NextResponse.next();
-});
+export { auth as middleware } from "@/auth";
 
 // Optionally configure middleware to match specific paths
 export const config = {
