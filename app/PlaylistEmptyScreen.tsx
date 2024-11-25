@@ -52,13 +52,23 @@ export default function PlaylistEmptyScreen({
         isLoading ? "pb-24 pt-24" : "pt-[24vh]",
       )}
     >
-      <Image
-        className="absolute left-24 top-[39px] opacity-[0.85] sm:left-auto"
-        src="/logo.png"
-        alt="Playlistai"
-        width={131}
-        height={31.7}
-      />
+      <AnimatePresence mode="popLayout">
+        {!isLoading && (
+          <motion.div
+            className="absolute left-24 top-[39px] sm:left-auto"
+            exit={{ y: -300, opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.5, type: "spring", bounce: 0 }}
+          >
+            <Image
+              className="opacity-[0.85]"
+              src="/logo.png"
+              alt="Playlistai"
+              width={131}
+              height={31.7}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
       {!isLoggedIn && !isLoading && (
         <button
           className="group absolute right-24 top-[36px] mx-auto flex items-center gap-10 rounded-full border border-input bg-gray-800 px-16 py-8 text-[16px] leading-[22px] text-gray-300 hover:text-white sm:right-48"
