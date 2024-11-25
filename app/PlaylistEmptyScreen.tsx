@@ -116,7 +116,7 @@ export default function PlaylistEmptyScreen({
         )}
         <AnimatePresence mode="popLayout">
           {!isLoading && (
-            <motion.div className="w-[100vw] px-20">
+            <motion.div className="w-[100vw] px-20 pb-20">
               <PlaylistSuggestions onSelect={handleSuggestionSelect} />
             </motion.div>
           )}
