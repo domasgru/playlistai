@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { AnimatePresence } from "framer-motion";
 import { useLocalStorage } from "usehooks-ts";
 import Image from "next/image";
+import { Toaster, toast } from "sonner";
 
 import {
   PlaylistInterface,
@@ -24,6 +25,8 @@ import PlaylistGenerateNewInput from "@/app/PlaylistGenerateNewInput";
 import FullscreenLoader from "@/app/FullscreenLoader";
 import PlaylistUpdateInput from "@/app/PlaylistUpdateInput";
 import CoverModal from "@/app/CoverModal";
+
+import demoPlaylists from "@/app/data/demoPlaylists.json";
 
 declare global {
   interface Window {
@@ -52,11 +55,21 @@ export default function PlaylistGenerator() {
   const [coverModalData, setCoverModalData] =
     useState<CoverModalDataInterface | null>(null);
 
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const hasInitialized = status !== "loading" && !isLoadingPlaylists;
+  const isEmptyStateShown =
+    !selectedPlaylist || (!session?.user && !isDemoMode);
 
   async function loadPlaylists() {
     try {
-      const loadedPlaylists = await getAllPlaylists();
+      const isDemoModeUrl =
+        new URLSearchParams(window.location.search).get("demo") === "true";
+      setIsDemoMode(isDemoModeUrl);
+
+      const loadedPlaylists = isDemoModeUrl
+        ? demoPlaylists
+        : await getAllPlaylists();
+
       if (!loadedPlaylists) return;
 
       const sortedPlaylists = loadedPlaylists.sort(
@@ -64,7 +77,13 @@ export default function PlaylistGenerator() {
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
       setAllPlaylists(sortedPlaylists);
-      if (sortedPlaylists.length > 0 && !selectedPlaylistId) {
+      if (
+        sortedPlaylists.length > 0 &&
+        (!selectedPlaylistId ||
+          !sortedPlaylists.find(
+            (playlist) => playlist.id === selectedPlaylistId,
+          ))
+      ) {
         setSelectedPlaylistId(sortedPlaylists[0].id);
       }
     } catch (error) {
@@ -76,6 +95,13 @@ export default function PlaylistGenerator() {
 
   const [isGeneratingNewPlaylist, setIsGeneratingNewPlaylist] = useState(false);
   async function generateNewPlaylist(playlistDescriptionInput: string) {
+    if (isDemoMode) {
+      toast("Sorry you can't generate playlists yet, this is a demo mode.", {
+        description: "Waiting for the Spotify to approve this app.",
+      });
+      return;
+    }
+
     try {
       if (!session?.user) {
         sessionStorage.setItem("generate", playlistDescriptionInput);
@@ -235,6 +261,13 @@ export default function PlaylistGenerator() {
     contextUri: string | null;
     trackUri: string;
   }) {
+    if (isDemoMode) {
+      toast("Sorry you can't play tracks yet, this is a demo mode.", {
+        description: "Waiting for the Spotify to approve this app",
+      });
+      return;
+    }
+
     try {
       if (trackUri === currentPlayerState?.currentTrackUri) {
         playerRef.current?.togglePlay();
@@ -282,7 +315,7 @@ export default function PlaylistGenerator() {
   }, []);
 
   useEffect(() => {
-    if (!hasInitialized) return;
+    if (!hasInitialized || isDemoMode) return;
 
     const generateParam = sessionStorage.getItem("generate");
     if (generateParam) {
@@ -292,6 +325,8 @@ export default function PlaylistGenerator() {
   }, [hasInitialized]);
 
   useEffect(() => {
+    if (isDemoMode) return;
+
     if (session?.user && selectedPlaylist && !playerRef.current) {
       loadSpotifyPlayer();
       return;
@@ -311,7 +346,7 @@ export default function PlaylistGenerator() {
 
       {hasInitialized && (
         <>
-          {(!session?.user || !selectedPlaylist) && (
+          {isEmptyStateShown && (
             <PlaylistEmptyScreen
               onSubmit={generateNewPlaylist}
               isLoggedIn={!!session?.user}
@@ -319,7 +354,7 @@ export default function PlaylistGenerator() {
             />
           )}
 
-          {session?.user && selectedPlaylist && (
+          {!isEmptyStateShown && (
             <div className="relative mx-auto h-full max-w-[592px] py-24">
               <div className="relative flex h-full w-full flex-col gap-16">
                 {/* Playlists manager */}
@@ -376,6 +411,7 @@ export default function PlaylistGenerator() {
                   <PlaylistUpdateInput
                     onSubmit={regenerateSelectedPlaylist}
                     isLoading={isRegenerating}
+                    isDemoMode={isDemoMode}
                   />
                 </div>
               </div>
@@ -384,15 +420,17 @@ export default function PlaylistGenerator() {
         </>
       )}
 
-      {session?.user && selectedPlaylist && (
+      {!isEmptyStateShown && (
         <Image
           src="/logo.png"
           alt="Playlistai"
           width={110}
           height={26.6}
-          className="absolute bottom-16 right-24 z-[-1] opacity-[0.75]"
+          className="absolute bottom-16 right-24 z-[-1] opacity-[0.6]"
         />
       )}
+
+      <Toaster position="bottom-right" />
 
       <CoverModal
         isOpen={!!coverModalData}

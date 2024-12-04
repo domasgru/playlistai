@@ -1,18 +1,27 @@
 import PlaylistInput from "@/app/PlaylistInput";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface PlaylistUpdateInputProps {
   onSubmit: (value: string) => void;
   isLoading: boolean;
+  isDemoMode: boolean;
 }
 
 export default function PlaylistUpdateInput({
   onSubmit,
   isLoading,
+  isDemoMode,
 }: PlaylistUpdateInputProps) {
   const [inputValue, setInputValue] = useState("");
 
   function handleSubmit() {
+    if (isDemoMode) {
+      toast("Sorry you can't update playlists yet, this is a demo mode.", {
+        description: "Waiting for the Spotify to approve this app.",
+      });
+      return;
+    }
     onSubmit(inputValue);
     setInputValue("");
   }

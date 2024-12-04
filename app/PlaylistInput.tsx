@@ -50,7 +50,6 @@ const PlaylistInput = forwardRef<HTMLTextAreaElement, PlaylistInputProps>(
     const rootRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    // Forward the textareaRef to the external ref
     useImperativeHandle(ref, () => textareaRef.current!);
 
     const [isFocused, setIsFocused] = useState(false);
