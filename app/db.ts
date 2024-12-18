@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, IDBPDatabase } from "idb";
-import { PlaylistInterface } from "@/app/types";
+import { PlaylistInterface } from "@/app/_types";
 
 interface PlaylistDB extends DBSchema {
   playlists: {

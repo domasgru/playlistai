@@ -7,7 +7,7 @@ import {
   replaceSpotifyPlaylistTracks,
 } from "./actions-spotify";
 import { getGeneratedTrackList } from "./actions-openai";
-import { PlaylistInterface } from "./types";
+import { PlaylistInterface } from "./_types";
 import { nanoid } from "nanoid";
 
 function filterUniqueTracks<T extends { spotify_uri: string }>(

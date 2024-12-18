@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { TrackInterface } from "./types";
+import { TrackInterface } from "./_types";
 
 const SPOTIFY_API_URL = "https://api.spotify.com/v1";
 

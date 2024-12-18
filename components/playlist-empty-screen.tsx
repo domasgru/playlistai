@@ -1,12 +1,12 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import PlaylistInput from "@/app/PlaylistInput";
-import PlaylistSuggestions from "@/app/PlaylistSuggestions";
+import PlaylistInput from "@/components/playlist-input";
+import PlaylistSuggestions from "@/components/playlist-suggestions";
 import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
-import PlaylistSkeleton from "@/app/PlaylistSkeleton";
-import { signInWithSpotify } from "./actions-auth";
+import PlaylistSkeleton from "@/components/playlist-skeleton";
+import { signInWithSpotify } from "../app/actions-auth";
 import Image from "next/image";
 interface PlaylistEmptyScreenProps {
   onSubmit: (input: string) => void;

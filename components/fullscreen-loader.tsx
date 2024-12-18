@@ -1,4 +1,4 @@
-import Loader from "@/app/Loader";
+import Loader from "@/components/loader";
 
 export default function FullscreenLoader() {
   return (

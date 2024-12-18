@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { PlaylistInterface, PlayerStateInterface } from "@/app/types";
+import { PlaylistInterface, PlayerStateInterface } from "@/app/_types";
 import { prominent } from "color.js";
 import PauseIcon from "@/public/pause.svg";
 import PlayIcon from "@/public/play.svg";

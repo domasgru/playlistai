@@ -3,7 +3,7 @@
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
-import { GeneratedTrackInterface } from "./types";
+import { GeneratedTrackInterface } from "./_types";
 
 export async function getGeneratedTrackList({
   prompt,

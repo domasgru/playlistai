@@ -1,4 +1,4 @@
-import PlaylistInput from "@/app/PlaylistInput";
+import PlaylistInput from "@/components/playlist-input";
 import { useState } from "react";
 import { toast } from "sonner";
 

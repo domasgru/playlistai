@@ -11,22 +11,22 @@ import {
   PlaylistInterface,
   PlayerStateInterface,
   CoverModalDataInterface,
-} from "@/app/types";
+} from "@/app/_types";
 import { signInWithSpotify } from "@/app/actions-auth";
 import { createPlaylist, updatePlaylistInSpotify } from "@/app/actions";
 import { playSpotifyTrack } from "@/app/actions-spotify";
 import { getAllPlaylists, savePlaylistInIDB } from "@/app/db";
 
-import PlaylistView from "@/app/PlaylistView";
-import GenerateButton from "@/app/GenerateButton";
-import PlaylistSelect from "@/app/PlaylistSelect";
-import PlaylistEmptyScreen from "@/app/PlaylistEmptyScreen";
-import PlaylistGenerateNewInput from "@/app/PlaylistGenerateNewInput";
-import FullscreenLoader from "@/app/FullscreenLoader";
-import PlaylistUpdateInput from "@/app/PlaylistUpdateInput";
-import CoverModal from "@/app/CoverModal";
+import PlaylistView from "@/components/playlist-view";
+import GenerateButton from "@/components/generate-button";
+import PlaylistSelect from "@/components/playlist-select";
+import PlaylistEmptyScreen from "@/components/playlist-empty-screen";
+import PlaylistGenerateNewInput from "@/components/playlist-generate-new-input";
+import FullscreenLoader from "@/components/fullscreen-loader";
+import PlaylistUpdateInput from "@/components/playlist-update-input";
+import CoverModal from "@/components/cover-modal";
 
-import demoPlaylists from "@/app/data/demoPlaylists.json";
+import demoPlaylists from "@/data/demo-playlists.json";
 
 declare global {
   interface Window {

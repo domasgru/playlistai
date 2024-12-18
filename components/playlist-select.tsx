@@ -1,4 +1,4 @@
-import { PlaylistInterface } from "@/app/types";
+import { PlaylistInterface } from "@/app/_types";
 import ChevronDown from "@/public/chevron-down.svg";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";

@@ -8,11 +8,11 @@ import {
   useImperativeHandle,
 } from "react";
 import clsx from "clsx";
-import GenerateButton from "@/app/GenerateButton";
+import GenerateButton from "@/components/generate-button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOnClickOutside } from "usehooks-ts";
-import GradientBlurBackground from "@/app/GradientBlurBackground";
-import Loader from "./Loader";
+import GradientBlurBackground from "@/components/gradient-blur-background";
+import Loader from "@/components/loader";
 
 interface PlaylistInputProps {
   onChange: (value: string) => void;
