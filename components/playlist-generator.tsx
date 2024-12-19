@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
+import * as React from "react";
+
 import { AnimatePresence } from "framer-motion";
-import { useLocalStorage } from "usehooks-ts";
 import Image from "next/image";
 import { Toaster, toast } from "sonner";
 
@@ -15,18 +14,22 @@ import {
 import { signInWithSpotify } from "@/app/actions-auth";
 import { createPlaylist, updatePlaylistInSpotify } from "@/app/actions";
 import { playSpotifyTrack } from "@/app/actions-spotify";
-import { getAllPlaylists, savePlaylistInIDB } from "@/app/db";
+import { savePlaylistInIDB } from "@/app/db";
 
 import PlaylistView from "@/components/playlist-view";
 import GenerateButton from "@/components/generate-button";
 import PlaylistSelect from "@/components/playlist-select";
 import PlaylistEmptyScreen from "@/components/playlist-empty-screen";
 import PlaylistGenerateNewInput from "@/components/playlist-generate-new-input";
-import FullscreenLoader from "@/components/fullscreen-loader";
 import PlaylistUpdateInput from "@/components/playlist-update-input";
 import CoverModal from "@/components/cover-modal";
 
-import demoPlaylists from "@/data/demo-playlists.json";
+import { useSession } from "next-auth/react";
+import {
+  usePlaylistDataContext,
+  usePlaylistApiContext,
+} from "@/contexts/playlist-context";
+import { isDemoMode } from "@/utils/isDemoMode";
 
 declare global {
   interface Window {
@@ -36,64 +39,25 @@ declare global {
 }
 
 export default function PlaylistGenerator() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
+  const { playlists, selectedPlaylist } = usePlaylistDataContext();
+  const { setSelectedPlaylistId, setPlaylists } = usePlaylistApiContext();
+  const [showNewPlaylistInput, setShowNewPlaylistInput] = React.useState(false);
 
-  const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(true);
-  const [allPlaylists, setAllPlaylists] = useState<PlaylistInterface[]>([]);
-  const [selectedPlaylistId, setSelectedPlaylistId] = useLocalStorage<
-    string | null
-  >("selectedPlaylistId", null);
-  const selectedPlaylist = allPlaylists.find(
-    (playlist) => playlist.id === selectedPlaylistId,
-  );
-  const [showNewPlaylistInput, setShowNewPlaylistInput] = useState(false);
-
-  const playerRef = useRef<any>(null);
-  const [playerDeviceId, setPlayerDeviceId] = useState<string | null>(null);
-  const [currentPlayerState, setCurrentPlayerState] =
-    useState<PlayerStateInterface | null>(null);
-  const [coverModalData, setCoverModalData] =
-    useState<CoverModalDataInterface | null>(null);
-
-  const [isDemoMode, setIsDemoMode] = useState(false);
-  const hasInitialized = status !== "loading" && !isLoadingPlaylists;
   const isEmptyStateShown =
     !selectedPlaylist || (!session?.user && !isDemoMode);
 
-  async function loadPlaylists() {
-    try {
-      const isDemoModeUrl =
-        new URLSearchParams(window.location.search).get("demo") === "true";
-      setIsDemoMode(isDemoModeUrl);
+  const playerRef = React.useRef<any>(null);
+  const [playerDeviceId, setPlayerDeviceId] = React.useState<string | null>(
+    null,
+  );
+  const [currentPlayerState, setCurrentPlayerState] =
+    React.useState<PlayerStateInterface | null>(null);
+  const [coverModalData, setCoverModalData] =
+    React.useState<CoverModalDataInterface | null>(null);
 
-      const loadedPlaylists = isDemoModeUrl
-        ? demoPlaylists
-        : await getAllPlaylists();
-
-      if (!loadedPlaylists) return;
-
-      const sortedPlaylists = loadedPlaylists.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
-      setAllPlaylists(sortedPlaylists);
-      if (
-        sortedPlaylists.length > 0 &&
-        (!selectedPlaylistId ||
-          !sortedPlaylists.find(
-            (playlist) => playlist.id === selectedPlaylistId,
-          ))
-      ) {
-        setSelectedPlaylistId(sortedPlaylists[0].id);
-      }
-    } catch (error) {
-      console.error("Error while loading playlists:", error);
-    } finally {
-      setIsLoadingPlaylists(false);
-    }
-  }
-
-  const [isGeneratingNewPlaylist, setIsGeneratingNewPlaylist] = useState(false);
+  const [isGeneratingNewPlaylist, setIsGeneratingNewPlaylist] =
+    React.useState(false);
   async function generateNewPlaylist(playlistDescriptionInput: string) {
     if (isDemoMode) {
       toast("Sorry you can't generate playlists yet, this is a demo mode.", {
@@ -118,12 +82,12 @@ export default function PlaylistGenerator() {
       setShowNewPlaylistInput(false);
       setIsGeneratingNewPlaylist(false);
       savePlaylistInIDB(playlist);
-      setAllPlaylists((prevPlaylists) => [playlist, ...prevPlaylists]);
+      setPlaylists((prevPlaylists) => [playlist, ...prevPlaylists]);
 
       const updatedPlaylist = await updatePlaylistInSpotify(playlist);
       setSelectedPlaylistId(updatedPlaylist.id);
       savePlaylistInIDB(updatedPlaylist);
-      setAllPlaylists((prevPlaylists) =>
+      setPlaylists((prevPlaylists) =>
         prevPlaylists.map((p) =>
           p.id === updatedPlaylist.id ? updatedPlaylist : p,
         ),
@@ -136,7 +100,7 @@ export default function PlaylistGenerator() {
     }
   }
 
-  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isRegenerating, setIsRegenerating] = React.useState(false);
   async function regenerateSelectedPlaylist(
     playlistDescriptionInput: string,
   ): Promise<void> {
@@ -290,10 +254,6 @@ export default function PlaylistGenerator() {
     }
   }
 
-  function handleShowCover(coverData: CoverModalDataInterface) {
-    setCoverModalData(coverData);
-  }
-
   function getBlurOutStyles(transformOrigin: string) {
     return blurOutPlaylistView
       ? {
@@ -310,21 +270,17 @@ export default function PlaylistGenerator() {
         };
   }
 
-  useEffect(() => {
-    loadPlaylists();
-  }, []);
-
-  useEffect(() => {
-    if (!hasInitialized || isDemoMode) return;
+  React.useEffect(() => {
+    if (isDemoMode) return;
 
     const generateParam = sessionStorage.getItem("generate");
     if (generateParam) {
       generateNewPlaylist(generateParam);
       sessionStorage.removeItem("generate");
     }
-  }, [hasInitialized]);
+  }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (isDemoMode) return;
 
     if (session?.user && selectedPlaylist && !playerRef.current) {
@@ -342,82 +298,74 @@ export default function PlaylistGenerator() {
 
   return (
     <div className="h-[100vh] w-full">
-      {!hasInitialized && <FullscreenLoader />}
+      {isEmptyStateShown && (
+        <PlaylistEmptyScreen
+          onSubmit={generateNewPlaylist}
+          isLoggedIn={!!session?.user}
+          isLoading={isGeneratingNewPlaylist}
+        />
+      )}
 
-      {hasInitialized && (
-        <>
-          {isEmptyStateShown && (
-            <PlaylistEmptyScreen
-              onSubmit={generateNewPlaylist}
-              isLoggedIn={!!session?.user}
-              isLoading={isGeneratingNewPlaylist}
-            />
-          )}
+      {!isEmptyStateShown && (
+        <div className="relative mx-auto h-full max-w-[592px] py-24">
+          <div className="relative flex h-full w-full flex-col gap-16">
+            {/* Playlists manager */}
+            <div className="z-10 flex justify-center">
+              <div
+                className="flex w-full flex-shrink-0 items-center justify-between gap-16"
+                style={getBlurOutStyles("center calc(100% + 150px)")}
+              >
+                <PlaylistSelect
+                  playlists={playlists}
+                  selectedPlaylist={selectedPlaylist}
+                  onSelectPlaylist={setSelectedPlaylistId}
+                />
 
-          {!isEmptyStateShown && (
-            <div className="relative mx-auto h-full max-w-[592px] py-24">
-              <div className="relative flex h-full w-full flex-col gap-16">
-                {/* Playlists manager */}
-                <div className="z-10 flex justify-center">
-                  <div
-                    className="flex w-full flex-shrink-0 items-center justify-between gap-16"
-                    style={getBlurOutStyles("center calc(100% + 150px)")}
-                  >
-                    <PlaylistSelect
-                      playlists={allPlaylists}
-                      selectedPlaylist={selectedPlaylist}
-                      onSelectPlaylist={setSelectedPlaylistId}
-                    />
-
-                    <GenerateButton
-                      size="lg"
-                      onClick={() =>
-                        setShowNewPlaylistInput(!showNewPlaylistInput)
-                      }
-                    >
-                      <span className="hidden sm:inline">New playlist</span>
-                      <Image
-                        src="/plus.svg"
-                        alt="New playlist"
-                        width={17}
-                        height={17}
-                        className="box-content h-[17px] w-[17px] p-[5px] sm:hidden"
-                      />
-                    </GenerateButton>
-                  </div>
-                  <AnimatePresence>
-                    {(showNewPlaylistInput || isGeneratingNewPlaylist) && (
-                      <PlaylistGenerateNewInput
-                        isLoading={isGeneratingNewPlaylist}
-                        onSubmit={generateNewPlaylist}
-                        onMouseLeave={handleNewPlaylistInputMouseleave}
-                        onEscape={handleNewPlaylistInputMouseleave}
-                        onClickOutside={handleNewPlaylistInputMouseleave}
-                      />
-                    )}
-                  </AnimatePresence>
-                </div>
-                {/* Playlist view */}
-                <div
-                  className="relative h-full min-h-0 flex-1"
-                  style={getBlurOutStyles("center calc(0% + 150px)")}
+                <GenerateButton
+                  size="lg"
+                  onClick={() => setShowNewPlaylistInput(!showNewPlaylistInput)}
                 >
-                  <PlaylistView
-                    playlist={selectedPlaylist}
-                    currentPlayerState={currentPlayerState}
-                    onPlayTrack={handlePlaySpotifyTrack}
-                    onShowCover={handleShowCover}
+                  <span className="hidden sm:inline">New playlist</span>
+                  <Image
+                    src="/plus.svg"
+                    alt="New playlist"
+                    width={17}
+                    height={17}
+                    className="box-content h-[17px] w-[17px] p-[5px] sm:hidden"
                   />
-                  <PlaylistUpdateInput
-                    onSubmit={regenerateSelectedPlaylist}
-                    isLoading={isRegenerating}
-                    isDemoMode={isDemoMode}
-                  />
-                </div>
+                </GenerateButton>
               </div>
+              <AnimatePresence>
+                {(showNewPlaylistInput || isGeneratingNewPlaylist) && (
+                  <PlaylistGenerateNewInput
+                    isLoading={isGeneratingNewPlaylist}
+                    onSubmit={generateNewPlaylist}
+                    onMouseLeave={handleNewPlaylistInputMouseleave}
+                    onEscape={handleNewPlaylistInputMouseleave}
+                    onClickOutside={handleNewPlaylistInputMouseleave}
+                  />
+                )}
+              </AnimatePresence>
             </div>
-          )}
-        </>
+            {/* Playlist view */}
+            <div
+              className="relative h-full min-h-0 flex-1"
+              style={getBlurOutStyles("center calc(0% + 150px)")}
+            >
+              <PlaylistView
+                playlist={selectedPlaylist}
+                currentPlayerState={currentPlayerState}
+                onPlayTrack={handlePlaySpotifyTrack}
+                onShowCover={setCoverModalData}
+              />
+              <PlaylistUpdateInput
+                onSubmit={regenerateSelectedPlaylist}
+                isLoading={isRegenerating}
+                isDemoMode={isDemoMode}
+              />
+            </div>
+          </div>
+        </div>
       )}
 
       {!isEmptyStateShown && (
