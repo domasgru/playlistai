@@ -1,32 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { PlaylistInterface, PlayerStateInterface } from "@/app/_types";
+import { useState, useEffect, memo } from "react";
+import { PlaylistInterface } from "@/app/_types";
 import { prominent } from "color.js";
 import PauseIcon from "@/public/pause.svg";
 import PlayIcon from "@/public/play.svg";
 import clsx from "clsx";
 import { motion } from "framer-motion";
+import { useSpotifyPlayerContext } from "@/contexts/spotify-player-context";
 
-export default function PlaylistView({
+const PlaylistView = memo(function PlaylistView({
   playlist,
-  currentPlayerState,
-  onPlayTrack,
   onShowCover,
 }: {
   playlist: PlaylistInterface;
-  currentPlayerState: PlayerStateInterface | null;
-  onPlayTrack: ({
-    contextUri,
-    trackUri,
-  }: {
-    contextUri: string | null;
-    trackUri: string;
-  }) => void;
   onShowCover: (cover: { layoutId: string; coverUrl: string }) => void;
 }) {
+  console.log("rendering -----> PlaylistView");
   const [dominantColor, setDominantColor] = useState<string>("");
   const [hoveredTrackId, setHoveredTrackId] = useState<string | null>(null);
+  const { handlePlaySpotifyTrack, currentPlayerState } =
+    useSpotifyPlayerContext();
 
   const extractColors = async (imageUrl: string) => {
     try {
@@ -129,7 +123,7 @@ export default function PlaylistView({
             }
             onMouseLeave={() => setHoveredTrackId(null)}
             onClick={() =>
-              onPlayTrack({
+              handlePlaySpotifyTrack({
                 contextUri: playlist.spotify_uri,
                 trackUri: track.spotify_uri,
               })
@@ -237,4 +231,6 @@ export default function PlaylistView({
       </div>
     </div>
   );
-}
+});
+
+export default PlaylistView;

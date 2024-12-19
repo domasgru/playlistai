@@ -5,16 +5,17 @@ import * as React from "react";
 import { AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { Toaster, toast } from "sonner";
+import { useSession } from "next-auth/react";
 
-import {
-  PlaylistInterface,
-  PlayerStateInterface,
-  CoverModalDataInterface,
-} from "@/app/_types";
+import { PlaylistInterface, CoverModalDataInterface } from "@/app/_types";
 import { signInWithSpotify } from "@/app/actions-auth";
 import { createPlaylist, updatePlaylistInSpotify } from "@/app/actions";
-import { playSpotifyTrack } from "@/app/actions-spotify";
 import { savePlaylistInIDB } from "@/app/db";
+import {
+  usePlaylistDataContext,
+  usePlaylistApiContext,
+} from "@/contexts/playlist-context";
+import { isDemoMode } from "@/utils/isDemoMode";
 
 import PlaylistView from "@/components/playlist-view";
 import GenerateButton from "@/components/generate-button";
@@ -24,35 +25,18 @@ import PlaylistGenerateNewInput from "@/components/playlist-generate-new-input";
 import PlaylistUpdateInput from "@/components/playlist-update-input";
 import CoverModal from "@/components/cover-modal";
 
-import { useSession } from "next-auth/react";
-import {
-  usePlaylistDataContext,
-  usePlaylistApiContext,
-} from "@/contexts/playlist-context";
-import { isDemoMode } from "@/utils/isDemoMode";
-
-declare global {
-  interface Window {
-    Spotify: any;
-    onSpotifyWebPlaybackSDKReady: () => void;
-  }
-}
+let didInit = false;
 
 export default function PlaylistGenerator() {
+  console.log("rendering -----> PlaylistGenerator");
   const { data: session } = useSession();
-  const { playlists, selectedPlaylist } = usePlaylistDataContext();
+  const { selectedPlaylist } = usePlaylistDataContext();
   const { setSelectedPlaylistId, setPlaylists } = usePlaylistApiContext();
   const [showNewPlaylistInput, setShowNewPlaylistInput] = React.useState(false);
 
   const isEmptyStateShown =
     !selectedPlaylist || (!session?.user && !isDemoMode);
 
-  const playerRef = React.useRef<any>(null);
-  const [playerDeviceId, setPlayerDeviceId] = React.useState<string | null>(
-    null,
-  );
-  const [currentPlayerState, setCurrentPlayerState] =
-    React.useState<PlayerStateInterface | null>(null);
   const [coverModalData, setCoverModalData] =
     React.useState<CoverModalDataInterface | null>(null);
 
@@ -122,7 +106,7 @@ export default function PlaylistGenerator() {
       };
 
       setSelectedPlaylistId(updatedPlaylist.id);
-      setAllPlaylists((prevPlaylists) =>
+      setPlaylists((prevPlaylists) =>
         prevPlaylists.map((playlist) =>
           playlist.id === updatedPlaylist.id ? updatedPlaylist : playlist,
         ),
@@ -138,113 +122,6 @@ export default function PlaylistGenerator() {
       console.error("Failed to regenerate playlist:", error);
     } finally {
       setIsRegenerating(false);
-    }
-  }
-
-  function loadSpotifyPlayer() {
-    playerRef.current = "loading";
-    const script = document.createElement("script");
-    script.src = "https://sdk.scdn.co/spotify-player.js";
-    script.async = true;
-
-    document.body.appendChild(script);
-
-    window.onSpotifyWebPlaybackSDKReady = () => {
-      const player = new window.Spotify.Player({
-        name: "Playlistai.com Player",
-        getOAuthToken: (cb: (token: string | undefined) => void) => {
-          cb(session?.access_token);
-        },
-        volume: 0.5,
-      });
-      playerRef.current = player;
-
-      playerRef.current.addListener(
-        "ready",
-        ({ device_id }: { device_id: string }) => {
-          setPlayerDeviceId(device_id);
-        },
-      );
-
-      playerRef.current.addListener(
-        "not_ready",
-        ({ device_id }: { device_id: string }) => {
-          console.error("Device ID has gone offline", device_id);
-        },
-      );
-
-      playerRef.current.addListener(
-        "player_state_changed",
-        (newState: {
-          paused: boolean;
-          position: number;
-          duration: number;
-          track_window: { current_track: any };
-        }) => {
-          if (newState) {
-            setCurrentPlayerState({
-              isPaused: newState.paused,
-              currentTrackId: newState.track_window.current_track.id,
-              currentTrackUri: newState.track_window.current_track.uri,
-              position: newState.position,
-              duration: newState.duration,
-            });
-          } else {
-            setCurrentPlayerState(null);
-          }
-        },
-      );
-
-      playerRef.current.connect();
-    };
-  }
-
-  function unloadSpotifyPlayer() {
-    if (playerRef.current) {
-      playerRef.current.disconnect();
-      playerRef.current = null;
-      setPlayerDeviceId(null);
-      setCurrentPlayerState(null);
-    }
-
-    const spotifyScript = document.querySelector(
-      'script[src="https://sdk.scdn.co/spotify-player.js"]',
-    );
-    if (spotifyScript) {
-      spotifyScript.remove();
-    }
-
-    // Clean up the global callback
-    window.onSpotifyWebPlaybackSDKReady = () => {};
-  }
-
-  function handlePlaySpotifyTrack({
-    contextUri,
-    trackUri,
-  }: {
-    contextUri: string | null;
-    trackUri: string;
-  }) {
-    if (isDemoMode) {
-      toast("Sorry you can't play tracks yet, this is a demo mode.", {
-        description: "Waiting for the Spotify to approve this app",
-      });
-      return;
-    }
-
-    try {
-      if (trackUri === currentPlayerState?.currentTrackUri) {
-        playerRef.current?.togglePlay();
-      } else {
-        playSpotifyTrack({
-          deviceId: playerDeviceId,
-          trackUri,
-          contextUri,
-        });
-        playerRef.current?.activateElement();
-      }
-    } catch (error) {
-      console.error("Error playing track:", error);
     }
   }
 
@@ -273,25 +150,15 @@ export default function PlaylistGenerator() {
   React.useEffect(() => {
     if (isDemoMode) return;
 
-    const generateParam = sessionStorage.getItem("generate");
-    if (generateParam) {
-      generateNewPlaylist(generateParam);
-      sessionStorage.removeItem("generate");
+    if (!didInit) {
+      const generateParam = sessionStorage.getItem("generate");
+      if (generateParam) {
+        generateNewPlaylist(generateParam);
+        sessionStorage.removeItem("generate");
+      }
+      didInit = true;
     }
   }, []);
-
-  React.useEffect(() => {
-    if (isDemoMode) return;
-
-    if (session?.user && selectedPlaylist && !playerRef.current) {
-      loadSpotifyPlayer();
-      return;
-    }
-
-    if ((!session?.user || !selectedPlaylist) && playerRef.current) {
-      unloadSpotifyPlayer();
-    }
-  }, [session?.user, selectedPlaylist]);
 
   const blurOutPlaylistView =
     (showNewPlaylistInput && !isGeneratingNewPlaylist) || coverModalData;
@@ -315,11 +182,7 @@ export default function PlaylistGenerator() {
                 className="flex w-full flex-shrink-0 items-center justify-between gap-16"
                 style={getBlurOutStyles("center calc(100% + 150px)")}
               >
-                <PlaylistSelect
-                  playlists={playlists}
-                  selectedPlaylist={selectedPlaylist}
-                  onSelectPlaylist={setSelectedPlaylistId}
-                />
+                <PlaylistSelect />
 
                 <GenerateButton
                   size="lg"
@@ -354,8 +217,6 @@ export default function PlaylistGenerator() {
             >
               <PlaylistView
                 playlist={selectedPlaylist}
-                currentPlayerState={currentPlayerState}
-                onPlayTrack={handlePlaySpotifyTrack}
                 onShowCover={setCoverModalData}
               />
               <PlaylistUpdateInput

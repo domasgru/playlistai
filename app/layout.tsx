@@ -3,6 +3,7 @@ import { Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import { PlaylistProvider } from "@/contexts/playlist-context";
+import { SpotifyPlayerProvider } from "@/contexts/spotify-player-context";
 const nunitoSans = Nunito_Sans({
   subsets: ["latin"],
   weight: ["200", "300", "400", "500", "600", "700", "800", "900"],
@@ -21,9 +22,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={nunitoSans.className}>
       <body className="bg-background-base px-[20px] font-sans text-base text-foreground-light">
-        <PlaylistProvider>
-          <SessionProvider>{children}</SessionProvider>
-        </PlaylistProvider>
+        <SessionProvider>
+          <PlaylistProvider>
+            <SpotifyPlayerProvider>{children}</SpotifyPlayerProvider>
+          </PlaylistProvider>
+        </SessionProvider>
       </body>
     </html>
   );

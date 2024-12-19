@@ -1,19 +1,19 @@
-import { PlaylistInterface } from "@/app/_types";
+"use client";
+
+import * as React from "react";
 import ChevronDown from "@/public/chevron-down.svg";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import {
+  usePlaylistDataContext,
+  usePlaylistApiContext,
+} from "@/contexts/playlist-context";
 
-export default function PlaylistSelect({
-  playlists,
-  selectedPlaylist,
-  onSelectPlaylist,
-}: {
-  playlists: PlaylistInterface[];
-  selectedPlaylist: PlaylistInterface | null;
-  onSelectPlaylist: (selectedPlaylist: string) => void;
-}) {
+const PlaylistSelect = React.memo(function PlaylistSelect() {
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const { playlists, selectedPlaylist } = usePlaylistDataContext();
+  const { setSelectedPlaylistId } = usePlaylistApiContext();
 
   function handleAnimationStart() {
     setIsAnimating(true);
@@ -83,7 +83,7 @@ export default function PlaylistSelect({
                 className={`flex w-full select-none items-center gap-12 px-16 py-12 text-left ${isAnimating ? "pointer-events-none" : "hover:cursor-default hover:bg-gray-700"}`}
                 onClick={() => {
                   if (!isAnimating) {
-                    onSelectPlaylist(playlist.id);
+                    setSelectedPlaylistId(playlist.id);
                     setIsOpen(false);
                   }
                 }}
@@ -121,4 +121,6 @@ export default function PlaylistSelect({
       </AnimatePresence>
     </div>
   );
-}
+});
+
+export default PlaylistSelect;
