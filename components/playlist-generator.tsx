@@ -183,7 +183,6 @@ export default function PlaylistGenerator() {
                 style={getBlurOutStyles("center calc(100% + 150px)")}
               >
                 <PlaylistSelect />
-
                 <GenerateButton
                   size="lg"
                   onClick={() => setShowNewPlaylistInput(!showNewPlaylistInput)}
