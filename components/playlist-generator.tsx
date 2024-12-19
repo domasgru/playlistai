@@ -28,7 +28,6 @@ import CoverModal from "@/components/cover-modal";
 let didInit = false;
 
 export default function PlaylistGenerator() {
-  console.log("rendering -----> PlaylistGenerator");
   const { data: session } = useSession();
   const { selectedPlaylist } = usePlaylistDataContext();
   const { setSelectedPlaylistId, setPlaylists } = usePlaylistApiContext();

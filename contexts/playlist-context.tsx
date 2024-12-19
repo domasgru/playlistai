@@ -76,7 +76,6 @@ export const PlaylistProvider = ({
     if (hasLoadedPlaylists) return;
 
     loadPlaylists();
-    console.log("load playlists");
     hasLoadedPlaylists = true;
   }, []);
 

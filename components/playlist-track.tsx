@@ -31,6 +31,10 @@ export function PlaylistTrack({
 }: PlaylistTrackProps) {
   const [isHovered, setIsHovered] = React.useState(false);
 
+  function getLayoutId(trackId: string, index: number) {
+    return `${trackId}-${index}-track`;
+  }
+
   return (
     <div
       key={`${track.spotify_id}-${index}-track`}
@@ -75,7 +79,7 @@ export function PlaylistTrack({
       <motion.div
         data-track-image
         key={`${track.spotify_id}-${index}-cover`}
-        layoutId={track.spotify_id}
+        layoutId={getLayoutId(track.spotify_id, index)}
         transition={{
           type: "spring",
           duration: 0.3,
@@ -89,7 +93,7 @@ export function PlaylistTrack({
         onClick={(e: React.MouseEvent) => {
           e.stopPropagation();
           onShowCover({
-            layoutId: track.spotify_id,
+            layoutId: getLayoutId(track.spotify_id, index),
             coverUrl: track.album.images[0]?.url,
           });
         }}

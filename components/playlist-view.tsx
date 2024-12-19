@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { useSpotifyPlayerContext } from "@/contexts/spotify-player-context";
 import { PlaylistTrack } from "@/components/playlist-track";
 
-const PlaylistView = React.memo(function PlaylistView({
+const PlaylistView = function PlaylistView({
   playlist,
   onShowCover,
 }: {
@@ -124,6 +124,6 @@ const PlaylistView = React.memo(function PlaylistView({
       </div>
     </div>
   );
-});
+};
 
 export default PlaylistView;
